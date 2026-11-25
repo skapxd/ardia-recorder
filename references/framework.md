@@ -2,7 +2,7 @@
 
 > Spanish version: [framework.es.md](framework.es.md).
 
-Records a walkthrough an agent performs with `ardia browse` and exports it as a 1920 × 1080, 30 fps MP4. On the left, a sidebar shows the task's goals, their progress and how long each one took. On the right, the real page appears inside a browser window with its URL. Inside the page, a virtual pointer moves to each element, and a red box with an arrow and a label marks it before every action.
+Records a walkthrough an agent performs with `ardia browse` and exports it as a 1920 × 1080, 30 fps MP4. On the left, a sidebar shows the task's goals, their progress and how long each one took. On the right, the real page appears inside an Ardia-style window, with the real host in the address field. Inside the page, a virtual pointer moves to each element, and a red box with an arrow and a label marks it before every action.
 
 In the commands below, `$SKILL` is the folder where this skill is installed.
 
@@ -28,7 +28,7 @@ ls "/Applications/Google Chrome.app"
 | `scripts/recorder.py` | `Recording` class: opens the page, captures it while the steps run (see [Capture and framing](#capture-and-framing)), and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
 | `scripts/window_capture.swift` | Records the Ardia window with ScreenCaptureKit and finds the page in it. Built once with `swiftc` into `~/Library/Caches/ardia-recorder/`. |
 | `scripts/overlay.js` | Layer injected into the page: virtual pointer, box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. |
-| `scripts/frame.html` | Background, goals sidebar and browser window. The page area stays transparent. |
+| `scripts/frame.html` | Background, goals sidebar and an Ardia-style window. The page area stays transparent; keep it in sync with `PAGE_*` in `render.py`. |
 | `scripts/render.py` | Combines `work/take.mov` and `work/take.json` into the final MP4. |
 
 The take (`work/take.mov`, `work/take.json`) and the video are written to the folder you run from, not to the skill.
@@ -95,7 +95,7 @@ The recorder tries three methods in order and records the one it used in `work/t
 
 For `window`, the overlay briefly paints magenta marks in the page corners; the helper finds them in a capture of each Ardia window, which gives the window and the exact page area for any display, scale or window layout. When a method is not available, the recorder prints why and uses the next one. Every take is encoded at a constant 30 fps at the page's CSS size, aligned with the goals timeline.
 
-The frame shows a 1340 × 908 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
+The frame shows a 1131 × 982 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
 
 Check the take size before exporting:
 

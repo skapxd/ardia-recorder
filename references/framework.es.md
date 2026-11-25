@@ -2,7 +2,7 @@
 
 > Versión en español de [framework.md](framework.md).
 
-Graba un recorrido que un agente hace con `ardia browse` y lo exporta como MP4 de 1920 × 1080 a 30 fps. A la izquierda hay un panel con los objetivos del encargo, su avance y el tiempo de cada uno. A la derecha se ve la página real dentro de una ventana de navegador, con su URL. Dentro de la página, un puntero virtual va a cada elemento y un recuadro rojo con flecha y etiqueta lo marca antes de cada acción.
+Graba un recorrido que un agente hace con `ardia browse` y lo exporta como MP4 de 1920 × 1080 a 30 fps. A la izquierda hay un panel con los objetivos del encargo, su avance y el tiempo de cada uno. A la derecha se ve la página real dentro de una ventana con el estilo de Ardia, con el dominio real en la barra de direcciones. Dentro de la página, un puntero virtual va a cada elemento y un recuadro rojo con flecha y etiqueta lo marca antes de cada acción.
 
 En los comandos, `$SKILL` es la carpeta donde está instalada esta skill.
 
@@ -28,7 +28,7 @@ ls "/Applications/Google Chrome.app"
 | `scripts/recorder.py` | Clase `Recording`: abre la página, la captura mientras corren los pasos (ver [Captura y encuadre](#captura-y-encuadre)) y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
 | `scripts/window_capture.swift` | Graba la ventana de Ardia con ScreenCaptureKit y encuentra la página en ella. Se compila una vez con `swiftc` en `~/Library/Caches/ardia-recorder/`. |
 | `scripts/overlay.js` | Capa que se inyecta en la página: puntero virtual, recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. |
-| `scripts/frame.html` | Fondo, panel de objetivos y ventana del navegador. El área de la página queda transparente. |
+| `scripts/frame.html` | Fondo, panel de objetivos y una ventana con el estilo de Ardia. El área de la página queda transparente; mantenla igual que `PAGE_*` en `render.py`. |
 | `scripts/render.py` | Une `work/take.mov` y `work/take.json` en el MP4 final. |
 
 La toma (`work/take.mov`, `work/take.json`) y el video quedan en la carpeta desde donde se ejecuta, no en la skill.
@@ -95,7 +95,7 @@ El grabador prueba tres métodos en orden y guarda el que usó en `work/take.jso
 
 Para `window`, la capa pinta un instante unas marcas magenta en las esquinas de la página; el helper las busca en una captura de cada ventana de Ardia y así obtiene la ventana y el área exacta de la página, en cualquier pantalla, escala o disposición. Cuando un método no está disponible, el grabador imprime el motivo y usa el siguiente. Toda toma se codifica a 30 fps constantes, al tamaño CSS de la página y alineada con la línea de tiempo de los objetivos.
 
-El marco muestra un área de 1340 × 908 de la página, centrada en horizontal y alineada arriba. Una página más grande se recorta; una más chica se rellena de blanco. Si la aplicación queda fuera de esa área, cambia el tamaño de la ventana de Ardia antes de grabar.
+El marco muestra un área de 1131 × 982 de la página, centrada en horizontal y alineada arriba. Una página más grande se recorta; una más chica se rellena de blanco. Si la aplicación queda fuera de esa área, cambia el tamaño de la ventana de Ardia antes de grabar.
 
 Comprueba el tamaño de la toma antes de exportar:
 

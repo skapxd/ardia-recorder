@@ -12,8 +12,11 @@ TAKE = Path(sys.argv[2] if len(sys.argv) > 2 else 'work/take').resolve()
 W = TAKE.parent
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OFFSET = 0               # seconds the sidebar changes are moved earlier; the capture shares the script clock
-# The frame's page area is 1340x908: center the page horizontally, keep its top, pad if it is smaller.
-FIT = 'crop=min(iw\\,1340):min(ih\\,908):(iw-min(iw\\,1340))/2:0,pad=1340:908:(ow-iw)/2:0:color=white'
+# The page area of frame.html (keep both in sync). The page is centered horizontally and kept at
+# its top; a larger page is cropped and a smaller one padded with white.
+PAGE_X, PAGE_Y, PAGE_W, PAGE_H = 740, 49, 1131, 982
+FIT = (f'crop=min(iw\\,{PAGE_W}):min(ih\\,{PAGE_H}):(iw-min(iw\\,{PAGE_W}))/2:0,'
+       f'pad={PAGE_W}:{PAGE_H}:(ow-iw)/2:0:color=white')
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
 POINTER_HTML = ('data:text/html,<body style="margin:0"><svg width="22" height="30" viewBox="0 0 22 30" '
@@ -82,7 +85,7 @@ if take.get('capture') == 'screenshots' and points:
     f.append(f"{page}[pg];[pg][ptr]overlay=x='{eased('x', points, 0)}':y='{eased('y', points, 0)}':shortest=1,{FIT}[app]")
 else:
     f.append(f'{page},{FIT}[app]')
-f.append('[bg][app]overlay=540:132:shortest=1[v0]')
+f.append(f'[bg][app]overlay={PAGE_X}:{PAGE_Y}:shortest=1[v0]')
 first = ins.count('-i')  # index of the first frame input
 for i, (t, s) in enumerate(states):
     png = W / f'frame-{i:02d}.png'
