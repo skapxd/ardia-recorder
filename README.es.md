@@ -8,7 +8,7 @@ Sirve para dejar evidencia de pruebas e2e y para mostrar paso a paso cómo se cu
 
 [![Demo: panel de objetivos a la izquierda y TodoMVC a la derecha](assets/demo.gif)](assets/demo.mp4)
 
-Video completo: [assets/demo.mp4](assets/demo.mp4) (36 s, 1920 × 1080).
+Video completo: [assets/demo.mp4](assets/demo.mp4) (38 s, 1920 × 1080).
 
 ## Instalación
 
@@ -18,16 +18,16 @@ Con [APM](https://microsoft.github.io/apm/):
 apm install --global skapxd/ardia-recorder
 ```
 
-Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.0.1`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
+Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.1.0`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
 
 ### Verificar la procedencia
 
 Cada release incluye `ardia-recorder-<versión>.tar.gz`, generado por GitHub Actions a partir del tag, con una atestación de procedencia firmada (SLSA, Sigstore). Para comprobarla e instalar desde ese paquete:
 
 ```sh
-gh release download v1.0.1 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
-gh attestation verify ardia-recorder-v1.0.1.tar.gz -R skapxd/ardia-recorder
-tar -xzf ardia-recorder-v1.0.1.tar.gz
+gh release download v1.1.0 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
+gh attestation verify ardia-recorder-v1.1.0.tar.gz -R skapxd/ardia-recorder
+tar -xzf ardia-recorder-v1.1.0.tar.gz
 apm install --global "$PWD/ardia-recorder"
 ```
 
