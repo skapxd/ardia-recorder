@@ -1,6 +1,6 @@
 from ardia_video import Grabacion
 
-TAREA, EDITADA = 'Validar la demo con Vercel', 'Validar la demo con Vercel y Ardia'
+TAREA, EDITADA = 'Comprar pan', 'Comprar pan integral'
 ULTIMA = '.todo-list li:last-child'
 
 OBJETIVOS = [
