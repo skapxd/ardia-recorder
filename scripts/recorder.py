@@ -6,6 +6,10 @@ Usage from a scenario:
         with r.goal(0):
             r.point('.selector', 'On-screen label')
             r.act('click', '.selector')
+        with r.goal(1):
+            r.tab('inbox', 'https://mail.example/inbox')   # open a second tab and show it
+            ...
+            r.tab('main')                                  # back to the first one
 
 Capture methods, in order (take.json records the one used in `capture`):
   video        Ardia's own recorder (`ardia browse record`), once Ardia allows it.
@@ -41,13 +45,15 @@ def helper():
 
 
 class Recording:
-    def __init__(self, title, description, goals, url, tab=None, lang='en', output='work/take'):
+    def __init__(self, title, description, goals, url, tab=None, lang='en', output='work/take', label='main'):
         self.meta = {'title': title, 'description': description, 'tab': tab, 'lang': lang,
                      'goals': [{'title': g[0], 'detail': g[1]} for g in goals]}
         self.url, self.output = url, output
         Path(output).parent.mkdir(parents=True, exist_ok=True)
         self.events, self.record = [], os.environ.get('RECORD', '1') != '0'
         self._url = None
+        self.first, self.tabs, self.active = label, {}, label  # tabs: label -> {'id', 'title'}
+        self._busy = threading.Lock()  # screenshots never run in the middle of an action (they can drop a hover)
 
     def cli(self, *args):
         r = sp.run(['ardia', 'browse', *args], text=True, capture_output=True)
@@ -67,11 +73,31 @@ class Recording:
             self._url = url
             self._event(type='url', url=url)
 
+    def _current_tab_id(self):
+        """The t-id of the tab this session is acting on (marked with an arrow in `tab list`)."""
+        m = re.search(r'^\s*→\s*\[(t\d+)\]', self.cli('tab', 'list'), re.M)
+        if not m:
+            raise RuntimeError('Could not find the session tab')
+        return m.group(1)
+
+    def _ensure_overlay(self):
+        """Inject the overlay into the current page if it is not there (new tab, reload, navigation)."""
+        if json.loads(self.cli('eval', 'typeof window.ardiaOverlay')) == 'undefined':
+            self.cli('eval', OVERLAY.read_text())
+            self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py draws the pointer
+
+    def _tabs_event(self, switch=None):
+        """switch: (start, end) of a tab change, so render.py can cross-fade the page over it."""
+        labels = list(self.tabs)
+        extra = {'switch': [round(switch[0], 3), round(switch[1], 3)]} if switch else {}
+        self._event(type='tabs', tabs=[self.tabs[l]['title'] for l in labels], active=labels.index(self.active), **extra)
+
     def _capture(self):
         """Take page screenshots as fast as Ardia returns them, each stamped with its time."""
         while not self._stop.is_set():
-            t, path = self.t(), self.frames_dir / f'{len(self.frames):05d}.png'
-            r = sp.run(['ardia', 'browse', 'screenshot', str(path)], capture_output=True)
+            with self._busy:
+                t, path = self.t(), self.frames_dir / f'{len(self.frames):05d}.png'
+                r = sp.run(['ardia', 'browse', 'screenshot', str(path)], capture_output=True)
             if r.returncode == 0 and path.exists():
                 self.frames.append((t, path.name))
 
@@ -152,17 +178,19 @@ class Recording:
 
     def __enter__(self):
         self.cli('open', self.url, '--show')
+        self.tabs[self.first] = {'id': self._current_tab_id(), 'title': self.meta['tab'] or self.cli('get', 'title').strip()}
         self.capture = None
         self.start = time.monotonic()
         if self.record and self._start_video():
             self.capture = 'video'
+        self._tabs_event()
         self._watch_url()
         self.cli('eval', OVERLAY.read_text())
+        self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py draws the pointer, so it can reach the tabs
         if self.record and not self.capture and self._start_window():
             self.capture = 'window'
         if self.record and not self.capture:
             self.capture = 'screenshots'
-            self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py animates it instead
             self.frames_dir = Path(self.output + '-frames')
             shutil.rmtree(self.frames_dir, ignore_errors=True)
             self.frames_dir.mkdir(parents=True)
@@ -190,6 +218,10 @@ class Recording:
         Path(self.output + '.json').write_text(json.dumps(
             {**self.meta, 'events': self.events, 'capture': self.capture, 'page': self.page, 'screenshot_fps': fps},
             ensure_ascii=False, indent=1))
+        for label, tab in self.tabs.items():  # close the tabs r.tab() opened; keep the first one
+            if label != self.first:
+                self.cli('tab', 'close', tab['id'])
+        self.cli('tab', self.tabs[self.first]['id'])
         self.cli('eval', 'window.ardiaOverlay?.remove()')
 
     @contextmanager
@@ -205,15 +237,43 @@ class Recording:
         self._event(type='goal', i=i, state='done')
         time.sleep(.9)
 
+    def tab(self, label, url=None, title=None):
+        """Open a new tab (with url) or go back to an open one, and show it in Ardia.
+
+        The sidebar of the video lists every tab opened so far and highlights the active one.
+        title is the tab text in that sidebar; by default, the page title."""
+        if url and label in self.tabs:
+            raise ValueError(f'Tab {label!r} is already open')
+        if not url and label not in self.tabs:
+            raise ValueError(f'Unknown tab {label!r}: open it with r.tab({label!r}, url)')
+        # The pointer goes to "New Tab" or to the tab in the sidebar and clicks it before the switch.
+        self._event(type='tab_click', target='new' if url else list(self.tabs).index(label))
+        time.sleep(1.1)
+        start = self.t()
+        if url:
+            self.cli('tab', 'new', '--label', label, url)
+            self.tabs[label] = {'id': self._current_tab_id(), 'title': None}
+        with self._busy:
+            self.cli('tab', self.tabs[label]['id'], '--show')
+        self.active = label
+        self._ensure_overlay()
+        self.tabs[label]['title'] = title or self.tabs[label]['title'] or self.cli('get', 'title').strip()
+        self._tabs_event(switch=(start, self.t()))
+        self._watch_url()
+        time.sleep(.9)
+
     def point(self, selector, label):
+        self._ensure_overlay()
         pos = json.loads(self.cli('eval', f'ardiaOverlay.point({json.dumps(selector)},{json.dumps(label, ensure_ascii=False)})'))
         self._event(type='point', x=round(pos['x'], 1), y=round(pos['y'], 1))
         time.sleep(1.2)
 
     def act(self, *args):
         time.sleep(.4)
-        out = self.cli(*args)
+        with self._busy:
+            out = self.cli(*args)
         time.sleep(.9)
+        self._ensure_overlay()
         self._watch_url()
         return out
 

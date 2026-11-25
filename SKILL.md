@@ -14,7 +14,7 @@ Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Check yours with `ar
 ## Workflow
 
 1. **Goals.** Turn the user's request into 3 to 7 verifiable goals, written for whoever watches the video: "Create a task", "Delete the task". Each one has a one-line detail of what happens. No goal mentions commands or selectors. Write them in the user's language and pass `lang='es'` to `Recording` if it is Spanish.
-2. **Scenario.** Write it in the user's project, for example `work/scenario.py`, following [examples/todomvc/scenario.py](examples/todomvc/scenario.py). In each goal: `r.point(...)` before the action, `r.act(...)` to act and `r.check(...)` with a real reading of the page. Get `@eN` references with `r.ref(...)` on every run: they change between sessions.
+2. **Scenario.** Write it in the user's project, for example `work/scenario.py`, following [examples/todomvc/scenario.py](examples/todomvc/scenario.py). In each goal: `r.point(...)` before the action, `r.act(...)` to act and `r.check(...)` with a real reading of the page. Get `@eN` references with `r.ref(...)` on every run: they change between sessions. When the task spans several tabs (a form in one, the inbox in another), switch with `r.tab(label, url)` and back with `r.tab(label)`; see [examples/todomvc-tabs/](examples/todomvc-tabs/).
 3. **Dry run.** From the project:
 
    ```sh

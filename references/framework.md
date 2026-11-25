@@ -27,7 +27,7 @@ ls "/Applications/Google Chrome.app"
 |---|---|
 | `scripts/recorder.py` | `Recording` class: opens the page, captures it while the steps run (see [Capture and framing](#capture-and-framing)), and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
 | `scripts/window_capture.swift` | Records the Ardia window with ScreenCaptureKit and finds the page in it. Built once with `swiftc` into `~/Library/Caches/ardia-recorder/`. |
-| `scripts/overlay.js` | Layer injected into the page: virtual pointer, box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. |
+| `scripts/overlay.js` | Layer injected into the page: box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. The pointer is drawn by `render.py`, so it can also reach the window's tabs. |
 | `scripts/frame.html` | Background, goals sidebar and an Ardia-style window. The page area stays transparent; keep it in sync with `PAGE_*` in `render.py`. |
 | `scripts/render.py` | Combines `work/take.mov` and `work/take.json` into the final MP4. |
 
@@ -56,11 +56,12 @@ with Recording('Title', 'Description', GOALS, 'https://…', tab='Tab title') as
 | `with r.goal(i):` | Goal `i` becomes *in progress* and shows its detail. When the block ends it becomes *done*, with its duration, and the box is hidden. If anything fails inside, it becomes *failed* and the scenario exits with an error. |
 | `r.point(selector, label)` | Moves the virtual pointer to the element and marks it with a box, arrow and label. Goes before the action. |
 | `r.act(*args)` | Runs `ardia browse <args>` with a pause before and after so the response is visible. Returns its output. If the URL changes, the address bar updates. |
+| `r.tab(label, url=None, title=None)` | With `url`, opens a new tab and shows it; without it, goes back to a tab already open. In the video, the pointer clicks "New Tab" or the tab in the sidebar, the old page slides out, a short notice names the tab now in front, and that tab glows for a moment; this adds about a second per change. The sidebar lists every tab opened so far and highlights the active one. `title` is the tab text (default: the page title); the first tab is `'main'`. The tabs it opened are closed at the end. |
 | `r.ref(role, selector=None)` | Returns the accessibility reference (`@e123`) of the first element whose role and name match `role` (a regular expression over `snapshot -i --full`). With `selector`, it searches only inside it. |
 | `r.cli(*args)` | Runs `ardia browse <args>` without pauses. For readings and checks. |
 | `r.check(condition, detail)` | If the condition is false, the goal in progress becomes *failed*. |
 
-For an element that only appears on hover, run `r.act('hover', …)` before `r.point`. If the site reloads the whole page when navigating, inject the layer again with `r.cli('eval', OVERLAY.read_text())`, importing `OVERLAY` from `recorder`.
+For an element that only appears on hover, run `r.act('hover', …)` before `r.point`. The overlay is injected again on its own after a reload, a navigation or a tab change. [examples/todomvc-tabs/](../examples/todomvc-tabs/) shows a task across two tabs.
 
 ## Recording and exporting
 
@@ -91,7 +92,7 @@ The recorder tries three methods in order and records the one it used in `work/t
 |---|---|---|---|
 | `video` | `ardia browse record` | Real video | An Ardia version that allows it (today it answers `policy_refused`) |
 | `window` | `window_capture.swift` records the Ardia window with ScreenCaptureKit | 30 fps, native resolution; other windows on top don't matter | Screen recording permission for the terminal, and `swiftc` |
-| `screenshots` | `ardia browse screenshot` in a loop | Page at about 8 fps; the pointer is drawn and animated at 30 fps by `render.py` | Nothing |
+| `screenshots` | `ardia browse screenshot` in a loop | Page at about 8 fps (the pointer is always drawn at 30 fps by `render.py`) | Nothing |
 
 For `window`, the overlay briefly paints magenta marks in the page corners; the helper finds them in a capture of each Ardia window, which gives the window and the exact page area for any display, scale or window layout. When a method is not available, the recorder prints why and uses the next one. Every take is encoded at a constant 30 fps at the page's CSS size, aligned with the goals timeline.
 
