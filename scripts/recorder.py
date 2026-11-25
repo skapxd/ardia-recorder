@@ -7,17 +7,37 @@ Usage from a scenario:
             r.point('.selector', 'On-screen label')
             r.act('click', '.selector')
 
-The page is captured from Ardia itself, so it does not depend on the screen, the window
-position or screen recording permission. It first tries real video (`ardia browse record`);
-while Ardia refuses it (policy_refused), it falls back to `ardia browse screenshot`. Writes the take to
-work/take.mov and the timeline to work/take.json, relative to the current directory.
+Capture methods, in order (take.json records the one used in `capture`):
+  video        Ardia's own recorder (`ardia browse record`), once Ardia allows it.
+  window       The Ardia window via ScreenCaptureKit (window_capture.swift), smooth and unaffected
+               by other windows. The page area is found with calibration marks, so nothing about
+               the screen or window position is configured. Needs screen recording permission.
+  screenshots  `ardia browse screenshot` in a loop (about 8 fps). The renderer animates the
+               pointer so it still moves smoothly. Needs nothing.
+Writes the take to work/take.mov and the timeline to work/take.json, relative to the current directory.
 With RECORD=0 in the environment, runs the flow without capturing.
 """
-import json, os, re, shutil, threading, time, subprocess as sp
+import hashlib, json, os, re, select, shutil, signal, threading, time, subprocess as sp
 from contextlib import contextmanager
 from pathlib import Path
 
 OVERLAY = Path(__file__).resolve().parent / 'overlay.js'
+HELPER_SRC = Path(__file__).resolve().parent / 'window_capture.swift'
+
+
+def helper():
+    """Compile window_capture.swift once per version into the user cache. None if it can't be built."""
+    digest = hashlib.sha256(HELPER_SRC.read_bytes()).hexdigest()[:12]
+    binary = Path.home() / 'Library/Caches/ardia-recorder' / f'window_capture-{digest}'
+    if not binary.exists():
+        if not shutil.which('swiftc'):
+            return None
+        binary.parent.mkdir(parents=True, exist_ok=True)
+        r = sp.run(['swiftc', '-O', str(HELPER_SRC), '-o', str(binary)], capture_output=True, text=True)
+        if r.returncode:
+            print('ardia-recorder: could not build window_capture:', r.stderr.strip()[-300:])
+            return None
+    return binary
 
 
 class Recording:
@@ -70,12 +90,48 @@ class Recording:
             print('ardia-recorder: video recording failed, using screenshots:', res.get('error', '').strip()[:200])
         return False
 
+    def _start_window(self):
+        """Record the Ardia window with ScreenCaptureKit. Returns False if it is not possible here."""
+        binary = helper()
+        if not binary:
+            return False
+        self.cli('eval', 'ardiaOverlay.marks(true)')
+        time.sleep(.4)
+        r = sp.run([str(binary), 'calibrate'], capture_output=True, text=True, timeout=30)
+        self.cli('eval', 'ardiaOverlay.marks(false)')
+        if r.returncode:
+            reason = 'no screen recording permission' if r.returncode == 3 else r.stderr.strip()[:200]
+            print(f'ardia-recorder: window capture unavailable ({reason}), using screenshots')
+            return False
+        self.area = json.loads(r.stdout)
+        self.window_raw = Path(self.output + '-window.mov').resolve()
+        start_wall = time.time() - self.t()
+        self.window_proc = sp.Popen([str(binary), 'record', str(self.window_raw), str(self.area['window'])],
+                                    stdout=sp.PIPE, stderr=sp.PIPE, text=True)
+        ready, _, _ = select.select([self.window_proc.stdout], [], [], 10)
+        line = self.window_proc.stdout.readline() if ready else ''
+        if not line.startswith('FIRST '):
+            self.window_proc.kill()
+            print('ardia-recorder: window capture did not start, using screenshots')
+            return False
+        self.window_offset = float(line.split()[1]) - start_wall
+        return True
+
+    def _encode_window(self):
+        """Crop the window recording to the page, scale it to CSS size and align it to the timeline."""
+        a = self.area
+        w, h = self.page
+        sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(self.window_raw), '-vf',
+                f"crop={a['w']}:{a['h']}:{a['x']}:{a['y']},scale={w}:{h}:flags=lanczos,fps=30,"
+                f"tpad=start_duration={max(self.window_offset, 0):.3f}:start_mode=clone",
+                '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
+
     def _page_size(self):
         return json.loads(self.cli('eval', '[innerWidth, innerHeight]'))
 
     def _encode_video(self):
         """Convert Ardia's recording to a constant 30 fps take at the page's CSS size."""
-        w, h = self._page_size()
+        w, h = self.page
         sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(self.video), '-vf', f'scale={w}:{h}:flags=lanczos,fps=30',
                 '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
 
@@ -89,7 +145,7 @@ class Recording:
             lines += [f'file {name}', f'duration {max(b - a, 0.001):.3f}']
         lines.append(f'file {self.frames[-1][1]}')
         (self.frames_dir / 'frames.txt').write_text('\n'.join(lines) + '\n')
-        w, h = self._page_size()
+        w, h = self.page
         sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0',
                 '-i', str(self.frames_dir / 'frames.txt'), '-vf', f'scale={w}:{h}:flags=lanczos,fps=30',
                 '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
@@ -102,8 +158,11 @@ class Recording:
             self.capture = 'video'
         self._watch_url()
         self.cli('eval', OVERLAY.read_text())
+        if self.record and not self.capture and self._start_window():
+            self.capture = 'window'
         if self.record and not self.capture:
             self.capture = 'screenshots'
+            self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py animates it instead
             self.frames_dir = Path(self.output + '-frames')
             shutil.rmtree(self.frames_dir, ignore_errors=True)
             self.frames_dir.mkdir(parents=True)
@@ -115,16 +174,21 @@ class Recording:
 
     def __exit__(self, *exc):
         time.sleep(3)  # hold the final state
+        self.page = self._page_size()
         if self.capture == 'video':
             self.cli('record', 'stop')
             self._encode_video()
+        elif self.capture == 'window':
+            self.window_proc.send_signal(signal.SIGINT)
+            self.window_proc.wait(timeout=30)
+            self._encode_window()
         elif self.capture == 'screenshots':
             self._stop.set()
             self._thread.join(timeout=10)
             self._encode()
         fps = round(len(self.frames) / self.t(), 1) if self.capture == 'screenshots' else None
         Path(self.output + '.json').write_text(json.dumps(
-            {**self.meta, 'events': self.events, 'capture': self.capture, 'screenshot_fps': fps},
+            {**self.meta, 'events': self.events, 'capture': self.capture, 'page': self.page, 'screenshot_fps': fps},
             ensure_ascii=False, indent=1))
         self.cli('eval', 'window.ardiaOverlay?.remove()')
 
@@ -142,7 +206,8 @@ class Recording:
         time.sleep(.9)
 
     def point(self, selector, label):
-        self.cli('eval', f'ardiaOverlay.point({json.dumps(selector)},{json.dumps(label, ensure_ascii=False)})')
+        pos = json.loads(self.cli('eval', f'ardiaOverlay.point({json.dumps(selector)},{json.dumps(label, ensure_ascii=False)})'))
+        self._event(type='point', x=round(pos['x'], 1), y=round(pos['y'], 1))
         time.sleep(1.2)
 
     def act(self, *args):

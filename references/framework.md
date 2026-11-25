@@ -11,7 +11,7 @@ In the commands below, `$SKILL` is the folder where this skill is installed.
 - macOS with Ardia open and **Settings → Advanced → Command line and automation → Let programs control Ardia** turned on.
 - Python 3 (standard library only), FFmpeg with `libx264`, and Google Chrome, which turns the HTML frame into images.
 
-Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Ardia does not allow in-browser video recording yet (`ardia browse record` fails with `policy_refused`), so the recorder takes page screenshots instead. It tries video first on every take, so it switches to video by itself once an Ardia version allows it.
+Optional, for smooth capture: screen recording permission for the terminal that runs the scenario, and Xcode's command line tools (`swiftc`) to build the window capture helper. Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0.
 
 ```sh
 command -v ardia ffmpeg ffprobe python3
@@ -25,7 +25,8 @@ ls "/Applications/Google Chrome.app"
 
 | File | What it does |
 |---|---|
-| `scripts/recorder.py` | `Recording` class: opens the page, captures it with `ardia browse record` or, while Ardia refuses that, `ardia browse screenshot` while the steps run, and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
+| `scripts/recorder.py` | `Recording` class: opens the page, captures it while the steps run (see [Capture and framing](#capture-and-framing)), and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
+| `scripts/window_capture.swift` | Records the Ardia window with ScreenCaptureKit and finds the page in it. Built once with `swiftc` into `~/Library/Caches/ardia-recorder/`. |
 | `scripts/overlay.js` | Layer injected into the page: virtual pointer, box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. |
 | `scripts/frame.html` | Background, goals sidebar and browser window. The page area stays transparent. |
 | `scripts/render.py` | Combines `work/take.mov` and `work/take.json` into the final MP4. |
@@ -63,7 +64,7 @@ For an element that only appears on hover, run `r.act('hover', …)` before `r.p
 
 ## Recording and exporting
 
-1. Open the Ardia profile the task runs in. The capture comes from the page itself, so the window can be anywhere and other windows can cover it.
+1. Open the Ardia profile the task runs in. The window can be anywhere on any display, and other windows can cover it.
 2. Dry run:
 
    ```sh
@@ -84,7 +85,15 @@ For an element that only appears on hover, run `r.act('hover', …)` before `r.p
 
 ## Capture and framing
 
-The recorder starts `ardia browse record` first. If Ardia accepts it, the take is real video. If Ardia answers `policy_refused`, as it does today, the page is captured as fast as Ardia returns screenshots (about 8 fps on a recent Mac); any other error falls back the same way and is printed. Either way, the take is encoded at a constant 30 fps at the page's CSS size, and `work/take.json` records the method in `capture` (`video` or `screenshots`). Each screenshot keeps the time it was taken, so the sidebar stays in sync with the page.
+The recorder tries three methods in order and records the one it used in `work/take.json` (`capture`):
+
+| `capture` | How | Smoothness | Needs |
+|---|---|---|---|
+| `video` | `ardia browse record` | Real video | An Ardia version that allows it (today it answers `policy_refused`) |
+| `window` | `window_capture.swift` records the Ardia window with ScreenCaptureKit | 30 fps, native resolution; other windows on top don't matter | Screen recording permission for the terminal, and `swiftc` |
+| `screenshots` | `ardia browse screenshot` in a loop | Page at about 8 fps; the pointer is drawn and animated at 30 fps by `render.py` | Nothing |
+
+For `window`, the overlay briefly paints magenta marks in the page corners; the helper finds them in a capture of each Ardia window, which gives the window and the exact page area for any display, scale or window layout. When a method is not available, the recorder prints why and uses the next one. Every take is encoded at a constant 30 fps at the page's CSS size, aligned with the goals timeline.
 
 The frame shows a 1340 × 908 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
 
