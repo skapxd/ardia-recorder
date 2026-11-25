@@ -18,16 +18,16 @@ Con [APM](https://microsoft.github.io/apm/):
 apm install --global skapxd/ardia-recorder
 ```
 
-Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.1.0`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
+Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.2.0`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
 
 ### Verificar la procedencia
 
 Cada release incluye `ardia-recorder-<versión>.tar.gz`, generado por GitHub Actions a partir del tag, con una atestación de procedencia firmada (SLSA, Sigstore). Para comprobarla e instalar desde ese paquete:
 
 ```sh
-gh release download v1.1.0 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
-gh attestation verify ardia-recorder-v1.1.0.tar.gz -R skapxd/ardia-recorder
-tar -xzf ardia-recorder-v1.1.0.tar.gz
+gh release download v1.2.0 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
+gh attestation verify ardia-recorder-v1.2.0.tar.gz -R skapxd/ardia-recorder
+tar -xzf ardia-recorder-v1.2.0.tar.gz
 apm install --global "$PWD/ardia-recorder"
 ```
 
