@@ -11,7 +11,7 @@ In the commands below, `$SKILL` is the folder where this skill is installed.
 - macOS with Ardia open and **Settings → Advanced → Command line and automation → Let programs control Ardia** turned on.
 - Python 3 (standard library only), FFmpeg with `libx264`, and Google Chrome, which turns the HTML frame into images.
 
-Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Ardia does not allow in-browser video recording yet (`ardia browse record` fails with `policy_refused`), so the recorder takes page screenshots instead.
+Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Ardia does not allow in-browser video recording yet (`ardia browse record` fails with `policy_refused`), so the recorder takes page screenshots instead. It tries video first on every take, so it switches to video by itself once an Ardia version allows it.
 
 ```sh
 command -v ardia ffmpeg ffprobe python3
@@ -25,7 +25,7 @@ ls "/Applications/Google Chrome.app"
 
 | File | What it does |
 |---|---|
-| `scripts/recorder.py` | `Recording` class: opens the page, captures it with `ardia browse screenshot` while the steps run, and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
+| `scripts/recorder.py` | `Recording` class: opens the page, captures it with `ardia browse record` or, while Ardia refuses that, `ardia browse screenshot` while the steps run, and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
 | `scripts/overlay.js` | Layer injected into the page: virtual pointer, box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. |
 | `scripts/frame.html` | Background, goals sidebar and browser window. The page area stays transparent. |
 | `scripts/render.py` | Combines `work/take.mov` and `work/take.json` into the final MP4. |
@@ -84,7 +84,7 @@ For an element that only appears on hover, run `r.act('hover', …)` before `r.p
 
 ## Capture and framing
 
-The page is captured as fast as Ardia returns screenshots (about 8 fps on a recent Mac) and encoded at a constant 30 fps at the page's CSS size. Each screenshot keeps the time it was taken, so the sidebar stays in sync with the page.
+The recorder starts `ardia browse record` first. If Ardia accepts it, the take is real video. If Ardia answers `policy_refused`, as it does today, the page is captured as fast as Ardia returns screenshots (about 8 fps on a recent Mac); any other error falls back the same way and is printed. Either way, the take is encoded at a constant 30 fps at the page's CSS size, and `work/take.json` records the method in `capture` (`video` or `screenshots`). Each screenshot keeps the time it was taken, so the sidebar stays in sync with the page.
 
 The frame shows a 1340 × 908 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
 

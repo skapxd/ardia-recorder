@@ -19,7 +19,7 @@ Probada con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Para ver las tuyas: `ard
    ```
 
    Corrige hasta que termine sin error.
-4. **Grabar.** Ejecuta lo mismo sin `RECORD=0`. La página se captura desde el propio Ardia con `ardia browse screenshot` (unos 8 fps), así que no necesita permiso de grabación de pantalla y nada en pantalla puede taparla.
+4. **Grabar.** Ejecuta lo mismo sin `RECORD=0`. La página se captura desde el propio Ardia, así que no necesita permiso de grabación de pantalla y nada en pantalla puede taparla. El grabador intenta primero video real (`ardia browse record`) y, mientras Ardia lo rechace, usa `ardia browse screenshot` (unos 8 fps). `work/take.json` indica cuál se usó (`capture`).
 5. **Exportar.**
 
    ```sh

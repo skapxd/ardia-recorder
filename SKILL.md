@@ -22,7 +22,7 @@ Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Check yours with `ar
    ```
 
    Fix it until it exits without errors.
-4. **Record.** Run the same command without `RECORD=0`. The page is captured from Ardia itself with `ardia browse screenshot` (about 8 fps), so it needs no screen recording permission and nothing on screen can cover it.
+4. **Record.** Run the same command without `RECORD=0`. The page is captured from Ardia itself, so it needs no screen recording permission and nothing on screen can cover it. The recorder tries real video first (`ardia browse record`) and, while Ardia refuses it, uses `ardia browse screenshot` (about 8 fps). `work/take.json` says which one was used (`capture`).
 5. **Export.**
 
    ```sh

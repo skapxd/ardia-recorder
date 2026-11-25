@@ -7,8 +7,9 @@ Usage from a scenario:
             r.point('.selector', 'On-screen label')
             r.act('click', '.selector')
 
-The page is captured from Ardia itself with `ardia browse screenshot`, so it does not depend
-on the screen, the window position or screen recording permission. Writes the take to
+The page is captured from Ardia itself, so it does not depend on the screen, the window
+position or screen recording permission. It first tries real video (`ardia browse record`);
+while Ardia refuses it (policy_refused), it falls back to `ardia browse screenshot`. Writes the take to
 work/take.mov and the timeline to work/take.json, relative to the current directory.
 With RECORD=0 in the environment, runs the flow without capturing.
 """
@@ -54,6 +55,30 @@ class Recording:
             if r.returncode == 0 and path.exists():
                 self.frames.append((t, path.name))
 
+    def _start_video(self):
+        """Try Ardia's own recorder. Returns True if it started; False if Ardia refuses it."""
+        self.video = Path(self.output + '.webm').resolve()
+        self.video.unlink(missing_ok=True)
+        r = sp.run(['ardia', 'browse', '--json', 'record', 'start', str(self.video)], text=True, capture_output=True)
+        try:
+            res = json.loads(r.stdout)
+        except ValueError:
+            res = {'success': False, 'code': None, 'error': r.stderr + r.stdout}
+        if res.get('success'):
+            return True
+        if res.get('code') != 'policy_refused':
+            print('ardia-recorder: video recording failed, using screenshots:', res.get('error', '').strip()[:200])
+        return False
+
+    def _page_size(self):
+        return json.loads(self.cli('eval', '[innerWidth, innerHeight]'))
+
+    def _encode_video(self):
+        """Convert Ardia's recording to a constant 30 fps take at the page's CSS size."""
+        w, h = self._page_size()
+        sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(self.video), '-vf', f'scale={w}:{h}:flags=lanczos,fps=30',
+                '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
+
     def _encode(self):
         """Turn the stamped screenshots into a constant 30 fps take at the page's CSS size."""
         if not self.frames:
@@ -64,17 +89,21 @@ class Recording:
             lines += [f'file {name}', f'duration {max(b - a, 0.001):.3f}']
         lines.append(f'file {self.frames[-1][1]}')
         (self.frames_dir / 'frames.txt').write_text('\n'.join(lines) + '\n')
-        w, h = json.loads(self.cli('eval', '[innerWidth, innerHeight]'))
+        w, h = self._page_size()
         sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0',
                 '-i', str(self.frames_dir / 'frames.txt'), '-vf', f'scale={w}:{h}:flags=lanczos,fps=30',
                 '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
 
     def __enter__(self):
         self.cli('open', self.url, '--show')
+        self.capture = None
         self.start = time.monotonic()
+        if self.record and self._start_video():
+            self.capture = 'video'
         self._watch_url()
         self.cli('eval', OVERLAY.read_text())
-        if self.record:
+        if self.record and not self.capture:
+            self.capture = 'screenshots'
             self.frames_dir = Path(self.output + '-frames')
             shutil.rmtree(self.frames_dir, ignore_errors=True)
             self.frames_dir.mkdir(parents=True)
@@ -86,12 +115,16 @@ class Recording:
 
     def __exit__(self, *exc):
         time.sleep(3)  # hold the final state
-        if self.record:
+        if self.capture == 'video':
+            self.cli('record', 'stop')
+            self._encode_video()
+        elif self.capture == 'screenshots':
             self._stop.set()
             self._thread.join(timeout=10)
             self._encode()
+        fps = round(len(self.frames) / self.t(), 1) if self.capture == 'screenshots' else None
         Path(self.output + '.json').write_text(json.dumps(
-            {**self.meta, 'events': self.events, 'fps': round(len(self.frames) / self.t(), 1) if self.record else None},
+            {**self.meta, 'events': self.events, 'capture': self.capture, 'screenshot_fps': fps},
             ensure_ascii=False, indent=1))
         self.cli('eval', 'window.ardiaOverlay?.remove()')
 

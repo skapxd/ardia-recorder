@@ -11,7 +11,7 @@ En los comandos, `$SKILL` es la carpeta donde está instalada esta skill.
 - macOS con Ardia abierto y **Settings → Advanced → Command line and automation → Let programs control Ardia** activado.
 - Python 3 (solo biblioteca estándar), FFmpeg con `libx264` y Google Chrome, que convierte el marco HTML a imagen.
 
-Probado con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Ardia todavía no permite grabar video desde el navegador (`ardia browse record` falla con `policy_refused`), así que el grabador toma capturas de la página.
+Probado con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Ardia todavía no permite grabar video desde el navegador (`ardia browse record` falla con `policy_refused`), así que el grabador toma capturas de la página. Intenta el video primero en cada toma, así que pasa solo a video cuando una versión de Ardia lo permita.
 
 ```sh
 command -v ardia ffmpeg ffprobe python3
@@ -25,7 +25,7 @@ ls "/Applications/Google Chrome.app"
 
 | Archivo | Qué hace |
 |---|---|
-| `scripts/recorder.py` | Clase `Recording`: abre la página, la captura con `ardia browse screenshot` mientras corren los pasos, y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
+| `scripts/recorder.py` | Clase `Recording`: abre la página, la captura con `ardia browse record` o, mientras Ardia lo rechace, con `ardia browse screenshot` mientras corren los pasos, y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
 | `scripts/overlay.js` | Capa que se inyecta en la página: puntero virtual, recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. |
 | `scripts/frame.html` | Fondo, panel de objetivos y ventana del navegador. El área de la página queda transparente. |
 | `scripts/render.py` | Une `work/take.mov` y `work/take.json` en el MP4 final. |
@@ -84,7 +84,7 @@ Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover',
 
 ## Captura y encuadre
 
-La página se captura tan rápido como Ardia devuelve las capturas (unos 8 fps en un Mac reciente) y se codifica a 30 fps constantes, al tamaño CSS de la página. Cada captura conserva el momento en que se tomó, así que el panel queda sincronizado con la página.
+El grabador inicia primero `ardia browse record`. Si Ardia lo acepta, la toma es video real. Si Ardia responde `policy_refused`, como hoy, la página se captura tan rápido como Ardia devuelve las capturas (unos 8 fps en un Mac reciente); cualquier otro error cae al mismo respaldo y se imprime. En los dos casos la toma se codifica a 30 fps constantes, al tamaño CSS de la página, y `work/take.json` guarda el método en `capture` (`video` o `screenshots`). Cada captura conserva el momento en que se tomó, así que el panel queda sincronizado con la página.
 
 El marco muestra un área de 1340 × 908 de la página, centrada en horizontal y alineada arriba. Una página más grande se recorta; una más chica se rellena de blanco. Si la aplicación queda fuera de esa área, cambia el tamaño de la ventana de Ardia antes de grabar.
 
