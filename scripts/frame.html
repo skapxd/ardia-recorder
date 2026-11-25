@@ -59,7 +59,6 @@
   .foot i{width:10px;height:10px;border-radius:50%;background:#fbb927;box-shadow:0 0 10px #fbb927}
   .foot.ok{background:rgba(63,179,107,.14);color:#a9ecc2}.foot.ok i{background:#3fb36b;box-shadow:0 0 10px #3fb36b}
   .foot.ko{background:rgba(232,84,84,.14);color:#f5b4b4}.foot.ko i{background:#e85454;box-shadow:0 0 10px #e85454}
-  .foot small{margin-left:auto;font:500 13px/1 system-ui;color:rgba(241,236,226,.45)}
 
   /* Ardia window: warm gradient, vertical tabs on the left, the page on an inset panel */
   .win{position:fixed;left:540px;top:40px;width:1340px;height:1000px;border-radius:14px;
@@ -99,7 +98,7 @@
   <p class="desc" id="desc"></p>
   <div class="prog"><div class="row"><span id="count"></span><span id="pct"></span></div><div class="bar"><i id="fill"></i></div></div>
   <ol class="list" id="list"></ol>
-  <div class="foot" id="foot"><i></i><span id="status"></span><small id="dom"></small></div>
+  <div class="foot" id="foot"><i></i><span id="status"></span></div>
 </aside>
 <div class="win">
   <div class="rail">
@@ -142,7 +141,6 @@
   const $ = id => document.getElementById(id), u = new URL(s.url);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>', CROSS = '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>';
   document.documentElement.lang = s.lang || 'en';
-  $('dom').textContent = u.host;
   // The address bar over the page shows where the agent is: host and full path
   $('uhost').textContent = u.host; $('upath').textContent = u.pathname + u.search + u.hash === '/' ? '' : u.pathname + u.search + u.hash;
   document.querySelector('.newtab').lastChild.textContent = T.newTab;
