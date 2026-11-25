@@ -56,11 +56,12 @@ with Recording('Título', 'Descripción', OBJETIVOS, 'https://…', tab='Título
 | `with r.goal(i):` | El objetivo `i` pasa a *en curso* y muestra su detalle. Al salir del bloque queda *cumplido*, con su duración, y se oculta el recuadro. Si algo falla dentro, queda *fallido* y el escenario termina con error. |
 | `r.point(selector, label)` | Mueve el puntero virtual al elemento y lo marca con recuadro, flecha y etiqueta. Va antes de la acción. |
 | `r.act(*args)` | Ejecuta `ardia browse <args>` con una pausa antes y después para que se vea la respuesta. Devuelve la salida. Si la URL cambia, la barra de direcciones se actualiza. |
+| `r.tab(label, url=None, title=None)` | Con `url`, abre una pestaña nueva y la muestra; sin ella, vuelve a una pestaña ya abierta. La barra lateral de la ventana lista las pestañas abiertas, resalta la activa y actualiza la dirección. `title` es el texto de la pestaña (por defecto, el título de la página); la primera pestaña es `'main'`. Al terminar cierra las pestañas que abrió. |
 | `r.ref(role, selector=None)` | Devuelve la referencia de accesibilidad (`@e123`) del primer elemento cuyo rol y nombre coinciden con `role` (expresión regular sobre `snapshot -i --full`). Con `selector`, busca solo dentro de él. |
 | `r.cli(*args)` | Ejecuta `ardia browse <args>` sin pausas. Para lecturas y comprobaciones. |
 | `r.check(condition, detail)` | Si la condición es falsa, el objetivo en curso queda *fallido*. |
 
-Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover', …)` antes de `r.point`. Si el sitio recarga la página completa al navegar, vuelve a inyectar la capa con `r.cli('eval', OVERLAY.read_text())`, importando `OVERLAY` desde `recorder`.
+Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover', …)` antes de `r.point`. La capa se vuelve a inyectar sola después de recargar, navegar o cambiar de pestaña. [examples/todomvc-tabs/](../examples/todomvc-tabs/) muestra una tarea en dos pestañas.
 
 ## Grabar y exportar
 

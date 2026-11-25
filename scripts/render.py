@@ -51,6 +51,8 @@ for e in take['events']:
         continue
     if e['type'] == 'url':
         state['url'] = e['url']
+    elif e['type'] == 'tabs':
+        state['tabs'], state['active'] = e['tabs'], e['active']
     else:
         g = state['goals'][e['i']]
         g['state'] = e['state']

@@ -65,7 +65,7 @@ with Recording('Ciclo de una tarea', 'Prueba e2e de TodoMVC', OBJETIVOS,
 Con `lang='es'`, los textos propios del panel salen en español.
 
 - La API y los ajustes de encuadre están en [references/framework.es.md](references/framework.es.md).
-- Hay un encargo completo de ejemplo, en inglés, en [examples/todomvc/](examples/todomvc/).
+- Encargos completos de ejemplo, en inglés: [examples/todomvc/](examples/todomvc/) (una pestaña) y [examples/todomvc-tabs/](examples/todomvc-tabs/) (dos pestañas, con `r.tab()`).
 
 ## Estructura
 
@@ -74,7 +74,7 @@ Con `lang='es'`, los textos propios del panel salen en español.
 | `SKILL.md` | Instrucciones para el agente (en español: `SKILL.es.md`) |
 | `scripts/` | Grabación (`recorder.py`), puntero virtual y marcas (`overlay.js`), marco (`frame.html`) y exportación (`render.py`) |
 | `references/` | API del escenario, ajustes y revisión (`framework.md`, `framework.es.md`) |
-| `examples/todomvc/` | Encargo y escenario de ejemplo |
+| `examples/` | Encargos y escenarios de ejemplo: una pestaña y dos pestañas |
 
 ## Licencia
 

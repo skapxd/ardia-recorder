@@ -56,11 +56,12 @@ with Recording('Title', 'Description', GOALS, 'https://…', tab='Tab title') as
 | `with r.goal(i):` | Goal `i` becomes *in progress* and shows its detail. When the block ends it becomes *done*, with its duration, and the box is hidden. If anything fails inside, it becomes *failed* and the scenario exits with an error. |
 | `r.point(selector, label)` | Moves the virtual pointer to the element and marks it with a box, arrow and label. Goes before the action. |
 | `r.act(*args)` | Runs `ardia browse <args>` with a pause before and after so the response is visible. Returns its output. If the URL changes, the address bar updates. |
+| `r.tab(label, url=None, title=None)` | With `url`, opens a new tab and shows it; without it, goes back to a tab already open. The window's sidebar lists every tab opened so far, highlights the active one and updates the address field. `title` is the tab text (default: the page title); the first tab is `'main'`. The tabs it opened are closed at the end. |
 | `r.ref(role, selector=None)` | Returns the accessibility reference (`@e123`) of the first element whose role and name match `role` (a regular expression over `snapshot -i --full`). With `selector`, it searches only inside it. |
 | `r.cli(*args)` | Runs `ardia browse <args>` without pauses. For readings and checks. |
 | `r.check(condition, detail)` | If the condition is false, the goal in progress becomes *failed*. |
 
-For an element that only appears on hover, run `r.act('hover', …)` before `r.point`. If the site reloads the whole page when navigating, inject the layer again with `r.cli('eval', OVERLAY.read_text())`, importing `OVERLAY` from `recorder`.
+For an element that only appears on hover, run `r.act('hover', …)` before `r.point`. The overlay is injected again on its own after a reload, a navigation or a tab change. [examples/todomvc-tabs/](../examples/todomvc-tabs/) shows a task across two tabs.
 
 ## Recording and exporting
 

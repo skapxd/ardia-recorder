@@ -11,7 +11,7 @@ Probada con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Para ver las tuyas: `ard
 ## Flujo
 
 1. **Objetivos.** Convierte lo que pidió el usuario en 3 a 7 objetivos verificables, redactados para quien ve el video: «Crear una tarea», «Borrar la tarea». Cada uno lleva un detalle de una línea con lo que se hace. Ningún objetivo menciona comandos ni selectores. Escríbelos en el idioma del usuario. Si es español, pasa `lang='es'` a `Recording`.
-2. **Escenario.** Escríbelo en el proyecto del usuario, por ejemplo `work/scenario.py`, siguiendo [examples/todomvc/scenario.py](examples/todomvc/scenario.py). En cada objetivo: `r.point(...)` antes de la acción, `r.act(...)` para actuar y `r.check(...)` con una lectura real de la página. Obtén las referencias `@eN` con `r.ref(...)` en cada ejecución: cambian entre sesiones.
+2. **Escenario.** Escríbelo en el proyecto del usuario, por ejemplo `work/scenario.py`, siguiendo [examples/todomvc/scenario.py](examples/todomvc/scenario.py). En cada objetivo: `r.point(...)` antes de la acción, `r.act(...)` para actuar y `r.check(...)` con una lectura real de la página. Obtén las referencias `@eN` con `r.ref(...)` en cada ejecución: cambian entre sesiones. Si el encargo usa varias pestañas (un formulario en una y la bandeja de entrada en otra), cambia con `r.tab(label, url)` y vuelve con `r.tab(label)`; ver [examples/todomvc-tabs/](examples/todomvc-tabs/).
 3. **Prueba sin grabar.** Ejecuta desde el proyecto:
 
    ```sh

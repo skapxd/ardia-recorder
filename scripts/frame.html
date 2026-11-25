@@ -75,8 +75,9 @@
   .newtab{display:flex;align-items:center;gap:9px;height:34px;margin-top:14px;padding:0 9px;color:rgba(255,255,255,.55)}
   .newtab b{font-weight:400;font-size:17px;width:16px;text-align:center}
   .sep{height:1px;margin:2px 6px 4px;background:rgba(255,255,255,.08)}
-  .tab{display:flex;align-items:center;gap:9px;height:34px;padding:0 9px;border-radius:10px;
-    background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,0) 60%),rgba(18,18,18,.5);box-shadow:0 .5px 30px rgba(255,255,255,.15)}
+  .tabs{display:flex;flex-direction:column;gap:3px}
+  .tab{display:flex;align-items:center;gap:9px;height:34px;padding:0 9px;border-radius:10px;color:rgba(255,255,255,.78)}
+  .tab.on{color:#fff;background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,0) 60%),rgba(18,18,18,.5);box-shadow:0 .5px 30px rgba(255,255,255,.15)}
   .fav{flex:none;width:16px;height:16px;border-radius:4px;background:#e9785a;color:#fff;font:700 10px/16px system-ui;text-align:center}
   .tab span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .dots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:5px}
@@ -106,7 +107,7 @@
     <div class="addr" id="host"></div>
     <div class="newtab"><b>+</b>New Tab</div>
     <div class="sep"></div>
-    <div class="tab"><span class="fav" id="fav"></span><span id="tabt"></span></div>
+    <div class="tabs" id="tabs"></div>
     <div class="dots"><i></i><i></i><i></i></div>
   </div>
   <div class="panel"></div>
@@ -126,7 +127,14 @@
   // Ardia shows the host in the sidebar's address field, as on ardia.dev
   $('host').textContent = u.host; $('dom').textContent = u.host;
   document.querySelector('.newtab').lastChild.textContent = T.newTab;
-  $('tabt').textContent = s.tab || u.host; $('fav').textContent = $('tabt').textContent.trim()[0].toUpperCase();
+  // Vertical tabs: every tab opened so far, the active one highlighted
+  const tabs = s.tabs || [s.tab || u.host], active = s.active || 0;
+  tabs.forEach((title, i) => {
+    const t = document.createElement('div'); t.className = 'tab' + (i === active ? ' on' : '');
+    t.innerHTML = '<span class="fav"></span><span></span>';
+    t.lastChild.textContent = title || u.host; t.firstChild.textContent = (title || u.host).trim()[0].toUpperCase();
+    $('tabs').append(t);
+  });
   $('eyebrow').textContent = T.eyebrow; $('title').textContent = s.title; $('desc').textContent = s.description;
   const done = s.goals.filter(g => g.state === 'done').length, total = s.goals.length;
   $('count').innerHTML = T.count(done, total);

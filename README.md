@@ -65,7 +65,7 @@ with Recording('Task lifecycle', 'E2E test on TodoMVC', GOALS,
 The sidebar texts can be in English or Spanish (`lang='es'`).
 
 - The API and framing adjustments are in [references/framework.md](references/framework.md).
-- A complete example task is in [examples/todomvc/](examples/todomvc/).
+- Complete example tasks: [examples/todomvc/](examples/todomvc/) (one tab) and [examples/todomvc-tabs/](examples/todomvc-tabs/) (two tabs, with `r.tab()`).
 
 ## Layout
 
@@ -74,7 +74,7 @@ The sidebar texts can be in English or Spanish (`lang='es'`).
 | `SKILL.md` | Instructions for the agent (Spanish: `SKILL.es.md`) |
 | `scripts/` | Recording (`recorder.py`), virtual pointer and highlights (`overlay.js`), frame (`frame.html`) and export (`render.py`) |
 | `references/` | Scenario API, adjustments and review (`framework.md`, `framework.es.md`) |
-| `examples/todomvc/` | Example task and scenario |
+| `examples/` | Example tasks and scenarios: one tab and two tabs |
 
 ## License
 
