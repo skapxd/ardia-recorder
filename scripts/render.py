@@ -1,4 +1,4 @@
-"""Compose <take>.mov + <take>.json into a 1920x1080 MP4 with a goals sidebar.
+"""Compose <take>.mov + <take>.json into an MP4 with a goals sidebar, sized to show the page 1:1.
 
     python3 render.py outputs/name.mp4 [work/take]
 """
@@ -12,11 +12,10 @@ TAKE = Path(sys.argv[2] if len(sys.argv) > 2 else 'work/take').resolve()
 W = TAKE.parent
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OFFSET = 0               # seconds the sidebar changes are moved earlier; the capture shares the script clock
-# The page area of frame.html (keep both in sync). The page is centered horizontally and kept at
-# its top; a larger page is cropped and a smaller one padded with white.
-PAGE_X, PAGE_Y, PAGE_W, PAGE_H = 740, 49, 1131, 982
-FIT = (f'crop=min(iw\\,{PAGE_W}):min(ih\\,{PAGE_H}):(iw-min(iw\\,{PAGE_W}))/2:0,'
-       f'pad={PAGE_W}:{PAGE_H}:(ow-iw)/2:0:color=white')
+# The page area of frame.html (keep both in sync). It grows with the captured viewport so the page
+# is shown 1:1, never cropped or scaled; the video grows with it. A page smaller than the minimum
+# area is centered and padded with white. MARGIN is the space right and below the window.
+PAGE_X, PAGE_Y, MIN_W, MIN_H, MARGIN = 740, 49, 1131, 982, 49
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
 POINTER_HTML = ('data:text/html,<body style="margin:0"><svg width="22" height="30" viewBox="0 0 22 30" '
@@ -32,7 +31,8 @@ RING = ('data:text/html,' + quote('<body style="margin:0"><div style="margin:4px
 MOVE = .8    # seconds the pointer takes to reach a target, as in overlay.js
 
 
-def snap(png, url, size='1920,1080', tries=3):
+def snap(png, url, size=None, tries=3):
+    size = size or f'{VIDEO_W},{VIDEO_H}'
     """Render a page to a transparent PNG. Headless Chrome fails now and then: retry."""
     cmd = [CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--default-background-color=00000000',
            f'--user-data-dir={tempfile.mkdtemp(prefix="ardia-recorder-chrome-")}',
@@ -49,10 +49,16 @@ TOAST = {'en': ('New tab', 'Back to'), 'es': ('Nueva pestaña', 'De vuelta a')}
 SLIDE, FLASH, TOAST_FOR = .5, 1.4, 1.8   # seconds: old page slides out, new tab glows, notice stays
 
 take = json.loads(TAKE.with_suffix('.json').read_text())
+W_PAGE, H_PAGE = take.get('page') or (MIN_W, MIN_H)
+# Even sizes: libx264 with yuv420p needs them.
+PAGE_W, PAGE_H = max(MIN_W, W_PAGE + W_PAGE % 2), max(MIN_H, H_PAGE + H_PAGE % 2)
+VIDEO_W, VIDEO_H = PAGE_X + PAGE_W + MARGIN, PAGE_Y + PAGE_H + MARGIN
+VIDEO_W, VIDEO_H = VIDEO_W + VIDEO_W % 2, VIDEO_H + VIDEO_H % 2
+FIT = f'pad={PAGE_W}:{PAGE_H}:(ow-iw)/2:0:color=white'
 lang = take.get('lang', 'en')
 dec = ',' if lang == 'es' else '.'
 state = {'title': take['title'], 'description': take['description'], 'tab': take.get('tab'), 'lang': lang,
-         'url': None, 'goals': [{**g, 'state': 'pending'} for g in take['goals']]}
+         'url': None, 'page': [PAGE_W, PAGE_H], 'video': [VIDEO_W, VIDEO_H], 'goals': [{**g, 'state': 'pending'} for g in take['goals']]}
 started, states, switches, count = {}, [], [], 1
 for e in take['events']:
     if e['type'] in ('point', 'tab_click'):
@@ -109,9 +115,8 @@ def toast_html(text):
 
 
 END = take['events'][-1]['t'] - OFFSET + 3
-W_PAGE, H_PAGE = take.get('page') or (PAGE_W, PAGE_H)
 # Pointer targets in video coordinates: point() targets inside the page, and tab clicks in the sidebar.
-dx = PAGE_X - max(0, (W_PAGE - PAGE_W) / 2) + max(0, (PAGE_W - W_PAGE) / 2)
+dx = PAGE_X + (PAGE_W - W_PAGE) // 2
 points, clicks = [], []
 for e in take['events']:
     if e['type'] == 'point':
@@ -120,7 +125,7 @@ for e in take['events']:
         x, y = NEW_TAB if e['target'] == 'new' else (TABS_X, TABS_Y + TABS_STEP * e['target'])
         points.append({'t': e['t'], 'x': x, 'y': y})
         clicks.append((e['t'] - OFFSET + MOVE, x, y))
-ins, f = ['-i', str(TAKE.with_suffix('.mov'))], ['color=0x121524:s=1920x1080:r=30[bg]']
+ins, f = ['-i', str(TAKE.with_suffix('.mov'))], [f'color=0x121524:s={VIDEO_W}x{VIDEO_H}:r=30[bg]']
 f.append(f'[0:v]fps=30:eof_action=pass,setsar=1,tpad=stop_mode=clone:stop_duration=10,trim=duration={END:.2f}[pg0]')
 cur = 'pg0'
 for k, sw in enumerate(switches):

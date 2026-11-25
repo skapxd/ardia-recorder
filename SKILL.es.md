@@ -2,7 +2,7 @@
 
 > Versión en español de [SKILL.md](SKILL.md). La que carga el agente es la versión en inglés.
 
-Genera un MP4 de 1920 × 1080 a 30 fps a partir de un **escenario**: un archivo Python que lista los objetivos del encargo y los pasos de `ardia browse` que los cumplen. El panel izquierdo del video cuenta el avance en lenguaje humano. No muestra comandos.
+Genera un MP4 a 30 fps, del tamaño necesario para mostrar la página capturada 1:1, a partir de un **escenario**: un archivo Python que lista los objetivos del encargo y los pasos de `ardia browse` que los cumplen. El panel izquierdo del video cuenta el avance en lenguaje humano. No muestra comandos.
 
 Los scripts están en `scripts/`, dentro del directorio base de esta skill (en adelante `$SKILL`). La referencia completa de la API, los ajustes de encuadre y la revisión del resultado está en [references/framework.es.md](references/framework.es.md). Hay un ejemplo completo en [examples/todomvc/](examples/todomvc/).
 

@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Skill para agentes que graba en video un recorrido hecho con [Ardia](https://ardia.dev) (`ardia browse`) y lo exporta como MP4 de 1920 × 1080. Un panel lateral muestra los objetivos del encargo, cuál está en curso, cuáles se cumplieron y cuánto tardó cada uno. La página se ve dentro de una ventana con el estilo de Ardia (pestañas verticales y el dominio real en la barra de direcciones), y un puntero virtual marca cada elemento antes de actuar sobre él.
+Skill para agentes que graba en video un recorrido hecho con [Ardia](https://ardia.dev) (`ardia browse`) y lo exporta como MP4 del tamaño del viewport capturado, con la página 1:1. Un panel lateral muestra los objetivos del encargo, cuál está en curso, cuáles se cumplieron y cuánto tardó cada uno. La página se ve dentro de una ventana con el estilo de Ardia (pestañas verticales y el dominio real en la barra de direcciones), y un puntero virtual marca cada elemento antes de actuar sobre él.
 
 Sirve para dejar evidencia de pruebas e2e y para mostrar paso a paso cómo se cumple una tarea en una web.
 
@@ -19,13 +19,13 @@ apm install --global 'skapxd/ardia-recorder#^1.0.0' --target claude,codex
 ```
 
 - **Origen:** APM la descarga directamente de este repositorio de GitHub. `skapxd/ardia-recorder` es la forma corta de `https://github.com/skapxd/ardia-recorder`, y las dos funcionan.
-- **Versión:** `#^1.0.0` instala el release 1.x más reciente, y `apm update` pasa a los siguientes. Usa un tag como `#v1.2.0` para quedarte en una versión. Sin versión, APM instala el último commit de `main`.
+- **Versión:** `#^1.0.0` instala el release 1.x más reciente, y `apm update` pasa a los siguientes. Usa un tag como `#v1.3.0` para quedarte en una versión. Sin versión, APM instala el último commit de `main`.
 - **Agentes:** `--target` indica qué agentes reciben la skill (`claude`, `codex` u otro de los que admite APM). Sin él, APM usa los `targets` de `~/.apm/apm.yml`.
 
 Sin APM, clona el repositorio en la carpeta de skills de tu agente. Para Claude Code:
 
 ```sh
-git clone --branch v1.2.0 https://github.com/skapxd/ardia-recorder ~/.claude/skills/ardia-recorder
+git clone --branch v1.3.0 https://github.com/skapxd/ardia-recorder ~/.claude/skills/ardia-recorder
 ```
 
 ### Verificar la procedencia
@@ -33,9 +33,9 @@ git clone --branch v1.2.0 https://github.com/skapxd/ardia-recorder ~/.claude/ski
 Cada release incluye `ardia-recorder-<versión>.tar.gz`, generado por GitHub Actions a partir del tag, con una atestación de procedencia firmada (SLSA, Sigstore). Para comprobarla e instalar desde ese paquete:
 
 ```sh
-gh release download v1.2.0 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
-gh attestation verify ardia-recorder-v1.2.0.tar.gz -R skapxd/ardia-recorder
-tar -xzf ardia-recorder-v1.2.0.tar.gz
+gh release download v1.3.0 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
+gh attestation verify ardia-recorder-v1.3.0.tar.gz -R skapxd/ardia-recorder
+tar -xzf ardia-recorder-v1.3.0.tar.gz
 apm install --global "$PWD/ardia-recorder"
 ```
 

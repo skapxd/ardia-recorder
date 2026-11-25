@@ -1,11 +1,11 @@
 ---
 name: ardia-recorder
-description: Records a walkthrough an agent performs with `ardia browse` (e2e tests or personal tasks in the browser) and exports it as a 1920×1080 MP4 with a goals sidebar showing what was asked, which sub-goal is in progress, which ones are done and how long each took. The page appears inside an Ardia-style window with its real host, and a red box with an arrow marks each element before acting on it. Use it to record evidence of an Ardia test, to show step by step how a task is completed on a website, or when asked to "record the walkthrough", "video with goals" or "e2e evidence with Ardia".
+description: Records a walkthrough an agent performs with `ardia browse` (e2e tests or personal tasks in the browser) and exports it as an MP4 sized to the viewport (page shown 1:1) with a goals sidebar showing what was asked, which sub-goal is in progress, which ones are done and how long each took. The page appears inside an Ardia-style window with its real host, and a red box with an arrow marks each element before acting on it. Use it to record evidence of an Ardia test, to show step by step how a task is completed on a website, or when asked to "record the walkthrough", "video with goals" or "e2e evidence with Ardia".
 ---
 
 # ardia-recorder
 
-Produces a 1920 × 1080, 30 fps MP4 from a **scenario**: a Python file listing the goals of the task and the `ardia browse` steps that complete them. The left sidebar tells the progress in plain language. It never shows commands.
+Produces a 30 fps MP4, sized so the captured page is shown 1:1, from a **scenario**: a Python file listing the goals of the task and the `ardia browse` steps that complete them. The left sidebar tells the progress in plain language. It never shows commands.
 
 The scripts live in `scripts/`, inside this skill's base directory (`$SKILL` below). The full API, framing adjustments and how to review the result are in [references/framework.md](references/framework.md). A complete example is in [examples/todomvc/](examples/todomvc/). Spanish versions: [SKILL.es.md](SKILL.es.md), [references/framework.es.md](references/framework.es.md).
 
