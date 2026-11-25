@@ -8,7 +8,7 @@ Use it to keep evidence of e2e tests, or to show step by step how a task is comp
 
 [![Demo: goals sidebar on the left, TodoMVC on the right](assets/demo.gif)](assets/demo.mp4)
 
-Full video: [assets/demo.mp4](assets/demo.mp4) (38 s, 1920 × 1080).
+Full video: [assets/demo.mp4](assets/demo.mp4) (39 s, 2304 × 1170).
 
 ## Install
 

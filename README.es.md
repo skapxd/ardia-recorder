@@ -8,7 +8,7 @@ Sirve para dejar evidencia de pruebas e2e y para mostrar paso a paso cómo se cu
 
 [![Demo: panel de objetivos a la izquierda y TodoMVC a la derecha](assets/demo.gif)](assets/demo.mp4)
 
-Video completo: [assets/demo.mp4](assets/demo.mp4) (38 s, 1920 × 1080).
+Video completo: [assets/demo.mp4](assets/demo.mp4) (39 s, 2304 × 1170).
 
 ## Instalación
 
