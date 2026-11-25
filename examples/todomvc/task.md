@@ -2,7 +2,7 @@
 
 Deliver a 1920 × 1080, 30 fps MP4 in which an agent, using `ardia browse`, creates a task in the [public TodoMVC demo](https://demo.playwright.dev/todomvc/#/active), edits it, marks it as completed, finds it under the **Completed** filter and deletes it. The scenario is [scenario.py](scenario.py).
 
-The reference take lasted about **36 seconds**.
+The reference take lasted about **38 seconds**.
 
 ## Setup
 
