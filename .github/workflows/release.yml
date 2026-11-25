@@ -1,0 +1,55 @@
+name: Release
+
+# Solo corre al publicar un release en GitHub.
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write          # subir el paquete al release
+      id-token: write          # firmar la atestación con Sigstore
+      attestations: write
+      artifact-metadata: write
+    env:
+      TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Compilar los scripts
+        run: python3 -m py_compile scripts/*.py examples/*/*.py
+
+      - uses: microsoft/apm-action@v1
+        with:
+          setup-only: 'true'
+
+      - name: Buscar Unicode oculto en los Markdown
+        run: |
+          for f in $(git ls-files '*.md'); do apm audit --file "$f"; done
+
+      - name: Instalar la skill con APM
+        run: |
+          dir=$(mktemp -d)
+          cd "$dir"
+          apm install "$GITHUB_WORKSPACE" --target claude
+          test -f .claude/skills/ardia-recorder/SKILL.md
+
+      - name: Empaquetar
+        run: |
+          mkdir dist
+          git archive --format=tar.gz --prefix=ardia-recorder/ -o "dist/ardia-recorder-$TAG.tar.gz" "$TAG"
+          (cd dist && sha256sum "ardia-recorder-$TAG.tar.gz" > "ardia-recorder-$TAG.tar.gz.sha256")
+
+      - name: Atestación de procedencia
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/ardia-recorder-${{ github.event.release.tag_name }}.tar.gz
+
+      - name: Subir al release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" dist/* --clobber
