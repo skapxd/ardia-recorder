@@ -71,13 +71,11 @@
   .lights i{width:12px;height:12px;border-radius:50%;display:block}
   .icons{display:flex;gap:12px;margin-left:auto;padding-right:4px}
   .icons svg{width:15px;height:15px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .addr{height:34px;margin-top:6px;padding:0 10px;display:flex;align-items:center;border-radius:10px;background:rgba(255,255,255,.06);
-    font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .newtab{display:flex;align-items:center;gap:9px;height:34px;margin-top:14px;padding:0 9px;color:rgba(255,255,255,.55)}
   .newtab b{font-weight:400;font-size:17px;width:16px;text-align:center}
   .sep{height:1px;margin:2px 6px 4px;background:rgba(255,255,255,.08)}
   /* Fixed position: render.py moves the pointer to these rows (keep TABS_* in sync) */
-  .tabs{position:absolute;left:9px;right:9px;top:136px;display:flex;flex-direction:column;gap:3px}
+  .tabs{position:absolute;left:9px;right:9px;top:96px;display:flex;flex-direction:column;gap:3px}
   .tab{display:flex;align-items:center;gap:9px;height:34px;padding:0 9px;border-radius:10px;color:rgba(255,255,255,.78)}
   .tab.flash{box-shadow:0 0 0 2px #fbb927,0 0 26px rgba(251,185,39,.55)!important}
   .tab.on{color:#fff;background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,0) 60%),rgba(18,18,18,.5);box-shadow:0 .5px 30px rgba(255,255,255,.15)}
@@ -113,7 +111,6 @@
         <svg viewBox="0 0 24 24" style="opacity:.5"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </div>
-    <div class="addr" id="host"></div>
     <div class="newtab"><b>+</b>New Tab</div>
     <div class="sep"></div>
     <div class="tabs" id="tabs"></div>
@@ -145,8 +142,7 @@
   const $ = id => document.getElementById(id), u = new URL(s.url);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>', CROSS = '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>';
   document.documentElement.lang = s.lang || 'en';
-  // Ardia shows the host in the sidebar's address field, as on ardia.dev
-  $('host').textContent = u.host; $('dom').textContent = u.host;
+  $('dom').textContent = u.host;
   // The address bar over the page shows where the agent is: host and full path
   $('uhost').textContent = u.host; $('upath').textContent = u.pathname + u.search + u.hash === '/' ? '' : u.pathname + u.search + u.hash;
   document.querySelector('.newtab').lastChild.textContent = T.newTab;
