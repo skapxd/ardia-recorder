@@ -1,6 +1,6 @@
 ---
 name: ardia-recorder
-description: Records a walkthrough an agent performs with `ardia browse` (e2e tests or personal tasks in the browser) and exports it as a 1920×1080 MP4 with a goals sidebar showing what was asked, which sub-goal is in progress, which ones are done and how long each took. The page appears inside a modern browser window with its real URL, and a red box with an arrow marks each element before acting on it. Use it to record evidence of an Ardia test, to show step by step how a task is completed on a website, or when asked to "record the walkthrough", "video with goals" or "e2e evidence with Ardia".
+description: Records a walkthrough an agent performs with `ardia browse` (e2e tests or personal tasks in the browser) and exports it as a 1920×1080 MP4 with a goals sidebar showing what was asked, which sub-goal is in progress, which ones are done and how long each took. The page appears inside an Ardia-style window with its real host, and a red box with an arrow marks each element before acting on it. Use it to record evidence of an Ardia test, to show step by step how a task is completed on a website, or when asked to "record the walkthrough", "video with goals" or "e2e evidence with Ardia".
 ---
 
 # ardia-recorder

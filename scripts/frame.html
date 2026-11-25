@@ -1,78 +1,88 @@
 <!doctype html>
 <meta charset="utf-8">
-<!-- Top layer of the video: background, goals sidebar and browser window.
+<!-- Top layer of the video: background, goals sidebar and an Ardia-style browser window.
      The page area stays transparent; FFmpeg places the capture underneath.
+     Keep the page area in sync with PAGE_* in render.py: x 740, y 49, 1131 x 982, radius 10.
      State in ?s=<json>: {title, description, tab, lang, url, goals:[{title, detail, state, dur}]} -->
 <style>
   *{box-sizing:border-box;margin:0}
   html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   /* Cut everything (shadows included) out of the page area */
-  body{-webkit-mask:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'><path fill-rule='evenodd' d='M0 0H1920V1080H0Z M540 132H1880V1026a14 14 0 0 1-14 14H554a14 14 0 0 1-14-14Z'/></svg>")}
-  .bg{position:fixed;inset:0;
-    background:radial-gradient(1100px 700px at 10% 0%,#34427f 0%,transparent 60%),
-               radial-gradient(1000px 700px at 100% 100%,#5e2a63 0%,transparent 55%),#121524}
+  body{-webkit-mask:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'><path fill-rule='evenodd' d='M0 0H1920V1080H0Z M750 49H1861a10 10 0 0 1 10 10V1021a10 10 0 0 1-10 10H750a10 10 0 0 1-10-10V59a10 10 0 0 1 10-10Z'/></svg>")}
 
-  /* Sidebar */
+  /* Background: Ardia's cream paper with a warm sun glow */
+  .bg{position:fixed;inset:0;
+    background:radial-gradient(520px 520px at 94% 8%,rgba(251,185,39,.55) 0%,rgba(251,185,39,0) 70%),
+               radial-gradient(900px 700px at 0% 100%,rgba(190,140,90,.22) 0%,transparent 65%),
+               linear-gradient(160deg,#f3eee4 0%,#ebe3d4 100%)}
+
+  /* Goals sidebar: ink card */
   .side{position:fixed;left:40px;top:40px;width:460px;height:1000px;padding:40px 34px 30px;display:flex;flex-direction:column;
-    border-radius:20px;background:rgba(12,14,26,.70);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.09);color:#e8eaf3}
-  .eyebrow{font:600 13px/1 system-ui;letter-spacing:.14em;text-transform:uppercase;color:#8d95bb}
+    border-radius:20px;background:#17130f;box-shadow:0 1px 2px rgba(22,19,15,.18),0 26px 60px -10px rgba(22,19,15,.45),inset 0 0 0 1px rgba(255,255,255,.06);color:#f1ece2}
+  .eyebrow{font:600 13px/1 system-ui;letter-spacing:.14em;text-transform:uppercase;color:#fbb927}
   h1{font-size:31px;line-height:1.15;font-weight:700;margin-top:14px;letter-spacing:-.01em}
-  .desc{font-size:16px;line-height:1.45;color:#a9b0c8;margin-top:10px}
+  .desc{font-size:16px;line-height:1.45;color:rgba(241,236,226,.62);margin-top:10px}
   .prog{margin-top:30px}
-  .prog .row{display:flex;justify-content:space-between;font-size:14px;color:#a9b0c8}
+  .prog .row{display:flex;justify-content:space-between;font-size:14px;color:rgba(241,236,226,.62)}
   .prog .row b{color:#fff;font-weight:600}
-  .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.09);margin-top:10px;overflow:hidden}
-  .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#60a5fa,#a78bfa)}
+  .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:10px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#fbb927,#e9785a)}
   .list{list-style:none;padding:0;margin-top:30px;display:flex;flex-direction:column;gap:6px;position:relative}
-  .item{position:relative;display:flex;gap:16px;padding:14px 14px;border-radius:14px;border:1px solid transparent}
-  .item:not(:last-child)::after{content:"";position:absolute;left:28px;top:46px;bottom:-12px;width:2px;background:rgba(255,255,255,.10)}
-  .item.done:not(:last-child)::after{background:rgba(34,197,94,.45)}
-  .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid #4a5170;z-index:1;background:#14172a}
+  .item{position:relative;display:flex;gap:16px;padding:14px 14px;border-radius:12px;border:1px solid transparent}
+  .item:not(:last-child)::after{content:"";position:absolute;left:28px;top:46px;bottom:-12px;width:2px;background:rgba(255,255,255,.09)}
+  .item.done:not(:last-child)::after{background:rgba(74,196,120,.45)}
+  .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(241,236,226,.22);z-index:1;background:#17130f}
   .ico svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .n{font:600 13px/1 system-ui;color:#7c84a3}
+  .n{font:600 13px/1 system-ui;color:rgba(241,236,226,.45)}
   .txt{flex:1;padding-top:4px}
-  .tt{font-size:19px;font-weight:500;color:#8a91ab}
-  .dt{font-size:15px;line-height:1.4;color:#a9b0c8;margin-top:6px;display:none}
-  .dur{font:500 13px/1 "SF Mono",ui-monospace,monospace;color:#6ee7a0;padding-top:9px;display:none}
-  .item.active{background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.38)}
-  .item.active .ico{border-color:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.18)}
-  .item.active .ico::before{content:"";width:10px;height:10px;border-radius:50%;background:#60a5fa}
+  .tt{font-size:19px;font-weight:500;color:rgba(241,236,226,.5)}
+  .dt{font-size:15px;line-height:1.4;color:rgba(241,236,226,.65);margin-top:6px;display:none}
+  .dur{font:500 13px/1 "SF Mono",ui-monospace,monospace;color:#7fd8a0;padding-top:9px;display:none}
+  /* Active goal: like Ardia's selected tab, dark with a soft top light */
+  .item.active{background:linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,.02)),rgba(0,0,0,.35);
+    box-shadow:0 .5px 24px rgba(251,185,39,.16),inset 0 0 0 1px rgba(251,185,39,.35)}
+  .item.active .ico{border-color:#fbb927;box-shadow:0 0 0 5px rgba(251,185,39,.16)}
+  .item.active .ico::before{content:"";width:10px;height:10px;border-radius:50%;background:#fbb927}
   .item.active .n{display:none}
   .item.active .tt{color:#fff;font-weight:650}
   .item.active .dt{display:block}
-  .item.done .ico{background:#22c55e;border-color:#22c55e}
-  .item.done .tt{color:#d7dbe8}
+  .item.done .ico{background:#3fb36b;border-color:#3fb36b}
+  .item.done .tt{color:rgba(241,236,226,.88)}
   .item.done .dur{display:block}
-  .item.failed{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.45)}
-  .item.failed .ico{background:#ef4444;border-color:#ef4444}
+  .item.failed{background:rgba(232,84,84,.12);box-shadow:inset 0 0 0 1px rgba(232,84,84,.5)}
+  .item.failed .ico{background:#e85454;border-color:#e85454}
   .item.failed .tt{color:#fff;font-weight:650}
-  .item.failed .dt{display:block;color:#fca5a5}
-  .foot{margin-top:auto;display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;font-size:16px;font-weight:600;
-    background:rgba(96,165,250,.10);color:#bfdbfe}
-  .foot i{width:10px;height:10px;border-radius:50%;background:#60a5fa;box-shadow:0 0 10px #60a5fa}
-  .foot.ok{background:rgba(34,197,94,.14);color:#bbf7d0}.foot.ok i{background:#22c55e;box-shadow:0 0 10px #22c55e}
-  .foot.ko{background:rgba(239,68,68,.14);color:#fecaca}.foot.ko i{background:#ef4444;box-shadow:0 0 10px #ef4444}
-  .foot small{margin-left:auto;font:500 13px/1 system-ui;color:#8d95bb}
+  .item.failed .dt{display:block;color:#f5b4b4}
+  .foot{margin-top:auto;display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:12px;font-size:16px;font-weight:600;
+    background:rgba(251,185,39,.10);color:#fcd77f}
+  .foot i{width:10px;height:10px;border-radius:50%;background:#fbb927;box-shadow:0 0 10px #fbb927}
+  .foot.ok{background:rgba(63,179,107,.14);color:#a9ecc2}.foot.ok i{background:#3fb36b;box-shadow:0 0 10px #3fb36b}
+  .foot.ko{background:rgba(232,84,84,.14);color:#f5b4b4}.foot.ko i{background:#e85454;box-shadow:0 0 10px #e85454}
+  .foot small{margin-left:auto;font:500 13px/1 system-ui;color:rgba(241,236,226,.45)}
 
-  /* Browser window */
+  /* Ardia window: warm gradient, vertical tabs on the left, the page on an inset panel */
   .win{position:fixed;left:540px;top:40px;width:1340px;height:1000px;border-radius:14px;
-    box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.14)}
-  .chrome{position:absolute;inset:0 0 auto 0;height:92px;background:#e9ebf0;border-radius:14px 14px 0 0;border-bottom:1px solid #d3d6dd}
-  .tabs{display:flex;align-items:flex-end;height:44px;padding:0 12px}
-  .lights{display:flex;gap:8px;padding:0 18px 14px 6px}
+    background:linear-gradient(#443136,#4b4245);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.35),inset 0 0 0 .5px rgba(255,255,255,.25),0 1px 2px rgba(22,19,15,.14),0 30px 60px rgba(22,19,15,.28)}
+  .rail{position:absolute;left:0;top:0;width:200px;height:100%;padding:0 9px;color:#fff;font-size:13px}
+  .top{display:flex;align-items:center;height:40px;padding-left:7px;gap:8px}
+  .lights{display:flex;gap:8px}
   .lights i{width:12px;height:12px;border-radius:50%;display:block}
-  .tab{display:flex;align-items:center;gap:9px;height:36px;width:250px;padding:0 14px;font-size:13px;color:#1f2430;background:#fff;border-radius:10px 10px 0 0}
-  .tab .fav{width:16px;height:16px;border-radius:4px;background:#b83f45;color:#fff;font:700 10px/16px system-ui;text-align:center}
-  .tab .x{margin-left:auto;color:#8a90a0;font-size:14px}
-  .plus{color:#5f6675;font-size:20px;padding:0 0 8px 14px}
-  .tbar{display:flex;align-items:center;gap:6px;height:48px;padding:0 12px;background:#fff}
-  .btn{width:32px;height:32px;display:grid;place-items:center}
-  .btn svg{width:18px;height:18px;stroke:#4a5060;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .btn.off svg{stroke:#b9bdc7}
-  .url{flex:1;display:flex;align-items:center;gap:10px;height:34px;margin:0 8px;padding:0 14px;border-radius:17px;background:#eef0f4;font-size:15px;color:#1f2430}
-  .url svg{width:14px;height:14px;stroke:#4a5060;fill:none;stroke-width:2.2}
-  .host{font-weight:600}.path{color:#6b7180}
-  .avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#7c3aed);margin-left:4px}
+  .icons{display:flex;gap:12px;margin-left:auto;padding-right:4px}
+  .icons svg{width:15px;height:15px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .addr{height:34px;margin-top:6px;padding:0 10px;display:flex;align-items:center;border-radius:10px;background:rgba(255,255,255,.06);
+    font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .newtab{display:flex;align-items:center;gap:9px;height:34px;margin-top:14px;padding:0 9px;color:rgba(255,255,255,.55)}
+  .newtab b{font-weight:400;font-size:17px;width:16px;text-align:center}
+  .sep{height:1px;margin:2px 6px 4px;background:rgba(255,255,255,.08)}
+  .tab{display:flex;align-items:center;gap:9px;height:34px;padding:0 9px;border-radius:10px;
+    background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,0) 60%),rgba(18,18,18,.5);box-shadow:0 .5px 30px rgba(255,255,255,.15)}
+  .fav{flex:none;width:16px;height:16px;border-radius:4px;background:#e9785a;color:#fff;font:700 10px/16px system-ui;text-align:center}
+  .tab span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:5px}
+  .dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .dots i:first-child{background:rgba(255,255,255,.7)}
+  .panel{position:absolute;left:200px;top:9px;width:1131px;height:982px;border-radius:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.4)}
 </style>
 <div class="bg"></div>
 <aside class="side">
@@ -83,36 +93,40 @@
   <ol class="list" id="list"></ol>
   <div class="foot" id="foot"><i></i><span id="status"></span><small id="dom"></small></div>
 </aside>
-<div class="win"><div class="chrome">
-  <div class="tabs">
-    <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
-    <div class="tab"><span class="fav" id="fav"></span><span id="tabt"></span><span class="x">✕</span></div>
-    <div class="plus">+</div>
+<div class="win">
+  <div class="rail">
+    <div class="top">
+      <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+      <div class="icons">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M9 5v14"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        <svg viewBox="0 0 24 24" style="opacity:.5"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+    <div class="addr" id="host"></div>
+    <div class="newtab"><b>+</b>New Tab</div>
+    <div class="sep"></div>
+    <div class="tab"><span class="fav" id="fav"></span><span id="tabt"></span></div>
+    <div class="dots"><i></i><i></i><i></i></div>
   </div>
-  <div class="tbar">
-    <div class="btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="btn off"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    <div class="btn"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg></div>
-    <div class="url"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-      <span><span class="host" id="host"></span><span class="path" id="path"></span></span></div>
-    <div class="btn"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg></div>
-    <div class="avatar"></div>
-  </div>
-</div></div>
+  <div class="panel"></div>
+</div>
 <script>
   const TEXT = {
     en: {eyebrow: 'Goals', count: (d, n) => `<b>${d}</b> of ${n} goals`, failed: 'A goal failed',
-         done: 'All goals completed', running: 'In progress', preparing: 'Preparing'},
+         done: 'All goals completed', running: 'In progress', preparing: 'Preparing', newTab: 'New Tab'},
     es: {eyebrow: 'Objetivos', count: (d, n) => `<b>${d}</b> de ${n} objetivos`, failed: 'Un objetivo falló',
-         done: 'Todos los objetivos cumplidos', running: 'En curso', preparing: 'Preparando'},
+         done: 'Todos los objetivos cumplidos', running: 'En curso', preparing: 'Preparando', newTab: 'Nueva pestaña'},
   };
   const s = JSON.parse(new URLSearchParams(location.search).get('s'));
   const T = TEXT[s.lang] || TEXT.en;
   const $ = id => document.getElementById(id), u = new URL(s.url);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>', CROSS = '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>';
   document.documentElement.lang = s.lang || 'en';
-  $('host').textContent = u.host; $('path').textContent = u.pathname + u.search + u.hash;
-  $('tabt').textContent = s.tab || u.host; $('fav').textContent = $('tabt').textContent.trim()[0].toUpperCase(); $('dom').textContent = u.host;
+  // Ardia shows the host in the sidebar's address field, as on ardia.dev
+  $('host').textContent = u.host; $('dom').textContent = u.host;
+  document.querySelector('.newtab').lastChild.textContent = T.newTab;
+  $('tabt').textContent = s.tab || u.host; $('fav').textContent = $('tabt').textContent.trim()[0].toUpperCase();
   $('eyebrow').textContent = T.eyebrow; $('title').textContent = s.title; $('desc').textContent = s.description;
   const done = s.goals.filter(g => g.state === 'done').length, total = s.goals.length;
   $('count').innerHTML = T.count(done, total);
