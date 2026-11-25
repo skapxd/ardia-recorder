@@ -11,7 +11,7 @@ En los comandos, `$SKILL` es la carpeta donde está instalada esta skill.
 - macOS con Ardia abierto y **Settings → Advanced → Command line and automation → Let programs control Ardia** activado.
 - Python 3 (solo biblioteca estándar), FFmpeg con `libx264` y Google Chrome, que convierte el marco HTML a imagen.
 
-Probado con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Ardia todavía no permite grabar video desde el navegador (`ardia browse record` falla con `policy_refused`), así que el grabador toma capturas de la página.
+Opcional, para una captura fluida: permiso de grabación de pantalla para la terminal que ejecuta el escenario, y las herramientas de línea de comandos de Xcode (`swiftc`) para compilar el helper de captura de la ventana. Probado con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0.
 
 ```sh
 command -v ardia ffmpeg ffprobe python3
@@ -25,7 +25,8 @@ ls "/Applications/Google Chrome.app"
 
 | Archivo | Qué hace |
 |---|---|
-| `scripts/recorder.py` | Clase `Recording`: abre la página, la captura con `ardia browse screenshot` mientras corren los pasos, y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
+| `scripts/recorder.py` | Clase `Recording`: abre la página, la captura mientras corren los pasos (ver [Captura y encuadre](#captura-y-encuadre)) y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
+| `scripts/window_capture.swift` | Graba la ventana de Ardia con ScreenCaptureKit y encuentra la página en ella. Se compila una vez con `swiftc` en `~/Library/Caches/ardia-recorder/`. |
 | `scripts/overlay.js` | Capa que se inyecta en la página: puntero virtual, recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. |
 | `scripts/frame.html` | Fondo, panel de objetivos y ventana del navegador. El área de la página queda transparente. |
 | `scripts/render.py` | Une `work/take.mov` y `work/take.json` en el MP4 final. |
@@ -63,7 +64,7 @@ Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover',
 
 ## Grabar y exportar
 
-1. Abre en Ardia el perfil donde se ejecuta el encargo. La captura sale de la propia página, así que la ventana puede estar en cualquier sitio y otras ventanas pueden taparla.
+1. Abre en Ardia el perfil donde se ejecuta el encargo. La ventana puede estar en cualquier sitio y pantalla, y otras ventanas pueden taparla.
 2. Prueba el flujo sin grabar:
 
    ```sh
@@ -84,7 +85,15 @@ Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover',
 
 ## Captura y encuadre
 
-La página se captura tan rápido como Ardia devuelve las capturas (unos 8 fps en un Mac reciente) y se codifica a 30 fps constantes, al tamaño CSS de la página. Cada captura conserva el momento en que se tomó, así que el panel queda sincronizado con la página.
+El grabador prueba tres métodos en orden y guarda el que usó en `work/take.json` (`capture`):
+
+| `capture` | Cómo | Fluidez | Necesita |
+|---|---|---|---|
+| `video` | `ardia browse record` | Video real | Una versión de Ardia que lo permita (hoy responde `policy_refused`) |
+| `window` | `window_capture.swift` graba la ventana de Ardia con ScreenCaptureKit | 30 fps, resolución nativa; no importa qué ventanas tenga encima | Permiso de grabación de pantalla para la terminal, y `swiftc` |
+| `screenshots` | `ardia browse screenshot` en bucle | Página a unos 8 fps; `render.py` dibuja y anima el puntero a 30 fps | Nada |
+
+Para `window`, la capa pinta un instante unas marcas magenta en las esquinas de la página; el helper las busca en una captura de cada ventana de Ardia y así obtiene la ventana y el área exacta de la página, en cualquier pantalla, escala o disposición. Cuando un método no está disponible, el grabador imprime el motivo y usa el siguiente. Toda toma se codifica a 30 fps constantes, al tamaño CSS de la página y alineada con la línea de tiempo de los objetivos.
 
 El marco muestra un área de 1340 × 908 de la página, centrada en horizontal y alineada arriba. Una página más grande se recorta; una más chica se rellena de blanco. Si la aplicación queda fuera de esa área, cambia el tamaño de la ventana de Ardia antes de grabar.
 

@@ -22,7 +22,7 @@ Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Check yours with `ar
    ```
 
    Fix it until it exits without errors.
-4. **Record.** Run the same command without `RECORD=0`. The page is captured from Ardia itself with `ardia browse screenshot` (about 8 fps), so it needs no screen recording permission and nothing on screen can cover it.
+4. **Record.** Run the same command without `RECORD=0`. There are three capture methods, tried in this order: Ardia's own video (`ardia browse record`, once Ardia allows it); the Ardia window through ScreenCaptureKit, smooth and unaffected by other windows, when the terminal has screen recording permission; and `ardia browse screenshot` (about 8 fps), where the pointer is animated at render time. Nothing about the screen or the window position is configured: the page area is found automatically. `work/take.json` says which one was used (`capture`). Grant screen recording permission to the terminal for the smooth window capture; without it the take still works.
 5. **Export.**
 
    ```sh

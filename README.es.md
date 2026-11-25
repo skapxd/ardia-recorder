@@ -36,7 +36,7 @@ apm install --global "$PWD/ardia-recorder"
 - macOS con Ardia abierto y **Settings → Advanced → Command line and automation → Let programs control Ardia** activado.
 - Python 3, FFmpeg con `libx264` y Google Chrome.
 
-Probada con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. La página se captura desde el propio Ardia, así que no hace falta permiso de grabación de pantalla.
+Opcional: con permiso de grabación de pantalla para la terminal y las herramientas de línea de comandos de Xcode (`swiftc`), la ventana se graba de forma fluida; sin ellos, la página se captura con screenshots. Probada con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0.
 
 ## Uso
 
