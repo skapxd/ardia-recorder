@@ -2,7 +2,7 @@
 
 > Versión en español de [framework.md](framework.md).
 
-Graba un recorrido que un agente hace con `ardia browse` y lo exporta como MP4 a 30 fps del tamaño del viewport capturado. A la izquierda hay un panel con los objetivos del encargo, su avance y el tiempo de cada uno. A la derecha se ve la página real dentro de una ventana con el estilo de Ardia, con el dominio real en la barra de direcciones. Dentro de la página, un puntero virtual va a cada elemento y un recuadro rojo con flecha y etiqueta lo marca antes de cada acción.
+Graba un recorrido que un agente hace con `ardia browse` y lo exporta como MP4 a 30 fps del tamaño del viewport capturado. A la izquierda hay un panel con los objetivos del encargo, su avance y el tiempo de cada uno. A la derecha se ve la página real dentro de una ventana con el estilo de Ardia, con una barra de direcciones sobre la página que muestra el dominio y el path actuales. Dentro de la página, un puntero virtual va a cada elemento y un recuadro rojo con flecha y etiqueta lo marca antes de cada acción.
 
 En los comandos, `$SKILL` es la carpeta donde está instalada esta skill.
 
@@ -96,7 +96,7 @@ El grabador prueba tres métodos en orden y guarda el que usó en `work/take.jso
 
 Para `window`, la capa pinta un instante unas marcas magenta en las esquinas de la página; el helper las busca en una captura de cada ventana de Ardia y así obtiene la ventana y el área exacta de la página, en cualquier pantalla, escala o disposición. Cuando un método no está disponible, el grabador imprime el motivo y usa el siguiente. Toda toma se codifica a 30 fps constantes, al tamaño CSS de la página y alineada con la línea de tiempo de los objetivos.
 
-El video crece con el viewport capturado para mostrar la página 1:1, sin recortarla ni escalarla: el área de la página es el viewport (mínimo 1131 × 982) y el video suma el panel de objetivos y los márgenes (1920 × 1080 con un viewport de 1131 × 982). Una página más chica se centra y se rellena de blanco.
+El video crece con el viewport capturado para mostrar la página 1:1, sin recortarla ni escalarla: el área de la página es el viewport (mínimo 1131 × 982) y el video suma el panel de objetivos y los márgenes (1920 × 1120 con un viewport de 1131 × 982). Una página más chica se centra y se rellena de blanco.
 
 Comprueba el tamaño de la toma antes de exportar:
 

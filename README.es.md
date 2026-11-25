@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Skill para agentes que graba en video un recorrido hecho con [Ardia](https://ardia.dev) (`ardia browse`) y lo exporta como MP4 del tamaño del viewport capturado, con la página 1:1. Un panel lateral muestra los objetivos del encargo, cuál está en curso, cuáles se cumplieron y cuánto tardó cada uno. La página se ve dentro de una ventana con el estilo de Ardia (pestañas verticales y el dominio real en la barra de direcciones), y un puntero virtual marca cada elemento antes de actuar sobre él.
+Skill para agentes que graba en video un recorrido hecho con [Ardia](https://ardia.dev) (`ardia browse`) y lo exporta como MP4 del tamaño del viewport capturado, con la página 1:1. Un panel lateral muestra los objetivos del encargo, cuál está en curso, cuáles se cumplieron y cuánto tardó cada uno. La página se ve dentro de una ventana con el estilo de Ardia (pestañas verticales y, sobre la página, una barra de direcciones con el dominio y el path actuales), y un puntero virtual marca cada elemento antes de actuar sobre él.
 
 Sirve para dejar evidencia de pruebas e2e y para mostrar paso a paso cómo se cumple una tarea en una web.
 

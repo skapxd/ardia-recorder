@@ -15,7 +15,7 @@ OFFSET = 0               # seconds the sidebar changes are moved earlier; the ca
 # The page area of frame.html (keep both in sync). It grows with the captured viewport so the page
 # is shown 1:1, never cropped or scaled; the video grows with it. A page smaller than the minimum
 # area is centered and padded with white. MARGIN is the space right and below the window.
-PAGE_X, PAGE_Y, MIN_W, MIN_H, MARGIN = 740, 49, 1131, 982, 49
+PAGE_X, PAGE_Y, MIN_W, MIN_H, MARGIN = 740, 89, 1131, 982, 49   # PAGE_Y leaves room for the address bar
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
 POINTER_HTML = ('data:text/html,<body style="margin:0"><svg width="22" height="30" viewBox="0 0 22 30" '
@@ -24,8 +24,8 @@ POINTER_HTML = ('data:text/html,<body style="margin:0"><svg width="22" height="3
                 'stroke-width="2" stroke-linejoin="round"/></svg>')
 TIP = 4      # the pointer's tip inside pointer.png
 # Sidebar targets in frame.html (keep in sync): the "New Tab" row and the first tab row, then one row every TABS_STEP.
-NEW_TAB = (600, 151)
-TABS_X, TABS_Y, TABS_STEP = 610, 193, 37
+NEW_TAB = (600, 111)
+TABS_X, TABS_Y, TABS_STEP = 610, 153, 37
 RING = ('data:text/html,' + quote('<body style="margin:0"><div style="margin:4px;width:40px;height:40px;border-radius:50%;'
         'background:rgba(37,99,235,.3);border:3px solid rgba(37,99,235,.95);box-sizing:border-box"></div>'))
 MOVE = .8    # seconds the pointer takes to reach a target, as in overlay.js

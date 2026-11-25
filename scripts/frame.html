@@ -2,8 +2,8 @@
 <meta charset="utf-8">
 <!-- Top layer of the video: background, goals sidebar and an Ardia-style browser window.
      The page area stays transparent; FFmpeg places the capture underneath.
-     Keep the page area in sync with PAGE_* in render.py: x 740, y 49, radius 10. Its size, and the
-     video's, come in the state (page, video); the defaults are 1131 x 982 inside 1920 x 1080.
+     Keep the page area in sync with PAGE_* in render.py: x 740, y 89, radius 10. Its size, and the
+     video's, come in the state (page, video); the defaults are 1131 x 982 inside 1920 x 1120.
      State in ?s=<json>: {title, description, tab, lang, url, page, video, goals:[{title, detail, state, dur}]} -->
 <style>
   *{box-sizing:border-box;margin:0}
@@ -59,7 +59,6 @@
   .foot i{width:10px;height:10px;border-radius:50%;background:#fbb927;box-shadow:0 0 10px #fbb927}
   .foot.ok{background:rgba(63,179,107,.14);color:#a9ecc2}.foot.ok i{background:#3fb36b;box-shadow:0 0 10px #3fb36b}
   .foot.ko{background:rgba(232,84,84,.14);color:#f5b4b4}.foot.ko i{background:#e85454;box-shadow:0 0 10px #e85454}
-  .foot small{margin-left:auto;font:500 13px/1 system-ui;color:rgba(241,236,226,.45)}
 
   /* Ardia window: warm gradient, vertical tabs on the left, the page on an inset panel */
   .win{position:fixed;left:540px;top:40px;width:1340px;height:1000px;border-radius:14px;
@@ -71,13 +70,11 @@
   .lights i{width:12px;height:12px;border-radius:50%;display:block}
   .icons{display:flex;gap:12px;margin-left:auto;padding-right:4px}
   .icons svg{width:15px;height:15px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .addr{height:34px;margin-top:6px;padding:0 10px;display:flex;align-items:center;border-radius:10px;background:rgba(255,255,255,.06);
-    font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .newtab{display:flex;align-items:center;gap:9px;height:34px;margin-top:14px;padding:0 9px;color:rgba(255,255,255,.55)}
   .newtab b{font-weight:400;font-size:17px;width:16px;text-align:center}
   .sep{height:1px;margin:2px 6px 4px;background:rgba(255,255,255,.08)}
   /* Fixed position: render.py moves the pointer to these rows (keep TABS_* in sync) */
-  .tabs{position:absolute;left:9px;right:9px;top:136px;display:flex;flex-direction:column;gap:3px}
+  .tabs{position:absolute;left:9px;right:9px;top:96px;display:flex;flex-direction:column;gap:3px}
   .tab{display:flex;align-items:center;gap:9px;height:34px;padding:0 9px;border-radius:10px;color:rgba(255,255,255,.78)}
   .tab.flash{box-shadow:0 0 0 2px #fbb927,0 0 26px rgba(251,185,39,.55)!important}
   .tab.on{color:#fff;background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,0) 60%),rgba(18,18,18,.5);box-shadow:0 .5px 30px rgba(255,255,255,.15)}
@@ -86,7 +83,13 @@
   .dots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:5px}
   .dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}
   .dots i:first-child{background:rgba(255,255,255,.7)}
-  .panel{position:absolute;left:200px;top:9px;width:1131px;height:982px;border-radius:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.4)}
+  /* Address bar over the page: the current host and path, readable at a glance */
+  .url{position:absolute;left:200px;top:9px;height:34px;display:flex;align-items:center;gap:9px;padding:0 14px;border-radius:10px;
+    background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);font-size:15px;white-space:nowrap;overflow:hidden}
+  .url svg{flex:none;width:14px;height:14px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .url b{color:#fff;font-weight:600}
+  .url span{overflow:hidden;text-overflow:ellipsis}
+  .panel{position:absolute;left:200px;top:49px;width:1131px;height:982px;border-radius:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.4)}
 </style>
 <div class="bg"></div>
 <aside class="side">
@@ -95,7 +98,7 @@
   <p class="desc" id="desc"></p>
   <div class="prog"><div class="row"><span id="count"></span><span id="pct"></span></div><div class="bar"><i id="fill"></i></div></div>
   <ol class="list" id="list"></ol>
-  <div class="foot" id="foot"><i></i><span id="status"></span><small id="dom"></small></div>
+  <div class="foot" id="foot"><i></i><span id="status"></span></div>
 </aside>
 <div class="win">
   <div class="rail">
@@ -107,12 +110,12 @@
         <svg viewBox="0 0 24 24" style="opacity:.5"><path d="M9 18l6-6-6-6"/></svg>
       </div>
     </div>
-    <div class="addr" id="host"></div>
     <div class="newtab"><b>+</b>New Tab</div>
     <div class="sep"></div>
     <div class="tabs" id="tabs"></div>
     <div class="dots"><i></i><i></i><i></i></div>
   </div>
+  <div class="url"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span><b id="uhost"></b><span id="upath"></span></span></div>
   <div class="panel"></div>
 </div>
 <script>
@@ -124,12 +127,13 @@
   };
   const s = JSON.parse(new URLSearchParams(location.search).get('s'));
   // The window grows with the captured page; the sidebar keeps its width and follows the height.
-  const [PW, PH] = s.page || [1131, 982], [VW, VH] = s.video || [1920, 1080];
+  const [PW, PH] = s.page || [1131, 982], [VW, VH] = s.video || [1920, 1120];
   for (const el of [document.documentElement, document.body]) { el.style.width = VW + 'px'; el.style.height = VH + 'px'; }
   document.querySelector('.side').style.height = VH - 80 + 'px';
-  Object.assign(document.querySelector('.win').style, {width: 200 + PW + 9 + 'px', height: PH + 18 + 'px'});
+  Object.assign(document.querySelector('.win').style, {width: 200 + PW + 9 + 'px', height: PH + 58 + 'px'});
+  document.querySelector('.url').style.width = PW + 'px';
   Object.assign(document.querySelector('.panel').style, {width: PW + 'px', height: PH + 'px'});
-  const X0 = 740, Y0 = 49, X1 = X0 + PW, Y1 = Y0 + PH;
+  const X0 = 740, Y0 = 89, X1 = X0 + PW, Y1 = Y0 + PH;
   const hole = `M${X0 + 10} ${Y0}H${X1 - 10}a10 10 0 0 1 10 10V${Y1 - 10}a10 10 0 0 1-10 10H${X0 + 10}a10 10 0 0 1-10-10V${Y0 + 10}a10 10 0 0 1 10-10Z`;
   document.body.style.webkitMask = `url("data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='${VW}' height='${VH}'><path fill-rule='evenodd' d='M0 0H${VW}V${VH}H0Z ${hole}'/></svg>`)}")`;
@@ -137,8 +141,8 @@
   const $ = id => document.getElementById(id), u = new URL(s.url);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>', CROSS = '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>';
   document.documentElement.lang = s.lang || 'en';
-  // Ardia shows the host in the sidebar's address field, as on ardia.dev
-  $('host').textContent = u.host; $('dom').textContent = u.host;
+  // The address bar over the page shows where the agent is: host and full path
+  $('uhost').textContent = u.host; $('upath').textContent = u.pathname + u.search + u.hash === '/' ? '' : u.pathname + u.search + u.hash;
   document.querySelector('.newtab').lastChild.textContent = T.newTab;
   // Vertical tabs: every tab opened so far, the active one highlighted
   const tabs = s.tabs || [s.tab || u.host], active = s.active || 0;

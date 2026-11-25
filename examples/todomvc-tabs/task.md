@@ -1,6 +1,6 @@
 # Task: one to-do list across two tabs
 
-Deliver a 1920 × 1080, 30 fps MP4 in which an agent, using `ardia browse`, creates a task in the [public TodoMVC demo](https://demo.playwright.dev/todomvc/#/active), opens the same list in a second tab without closing the first, completes the task there, goes back to the first tab to check the change, and deletes the task. The scenario is [scenario.py](scenario.py).
+Deliver a 30 fps MP4 in which an agent, using `ardia browse`, creates a task in the [public TodoMVC demo](https://demo.playwright.dev/todomvc/#/active), opens the same list in a second tab without closing the first, completes the task there, goes back to the first tab to check the change, and deletes the task. The scenario is [scenario.py](scenario.py).
 
 TodoMVC keeps its tasks in the browser's `localStorage`, so both tabs read the same list. A tab only picks up changes made in the other one when it reloads.
 
