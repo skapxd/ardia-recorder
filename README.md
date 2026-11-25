@@ -18,7 +18,13 @@ With [APM](https://microsoft.github.io/apm/):
 apm install --global skapxd/ardia-recorder
 ```
 
-To pin a version, add the tag: `skapxd/ardia-recorder#v1.2.0`. To choose the target agent, add `--target claude`, `--target codex` or any other target APM supports.
+APM downloads it straight from this GitHub repository: `skapxd/ardia-recorder` is short for `https://github.com/skapxd/ardia-recorder`, and either form works. To pin a version, add the tag: `skapxd/ardia-recorder#v1.2.0`. To choose the target agent, add `--target claude`, `--target codex` or any other target APM supports.
+
+Without APM, clone the repository into your agent's skills folder. For Claude Code:
+
+```sh
+git clone --branch v1.2.0 https://github.com/skapxd/ardia-recorder ~/.claude/skills/ardia-recorder
+```
 
 ### Verifying provenance
 
