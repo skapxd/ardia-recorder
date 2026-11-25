@@ -4,3 +4,4 @@ outputs/
 *.mov
 *.mp4
 .DS_Store
+!assets/*.mp4

@@ -1,12 +1,12 @@
 <!doctype html>
 <meta charset="utf-8">
-<!-- Capa superior del video: fondo, sidebar de objetivos y ventana del navegador.
-     El área de contenido queda transparente; FFmpeg pone la captura debajo.
-     Estado en ?s=<json>: {titulo, descripcion, url, objetivos:[{titulo,detalle,estado,dur}], final} -->
+<!-- Top layer of the video: background, goals sidebar and browser window.
+     The page area stays transparent; FFmpeg places the capture underneath.
+     State in ?s=<json>: {title, description, tab, lang, url, goals:[{title, detail, state, dur}]} -->
 <style>
   *{box-sizing:border-box;margin:0}
   html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  /* Recorta todo (incluidas sombras) para dejar el hueco del contenido */
+  /* Cut everything (shadows included) out of the page area */
   body{-webkit-mask:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='1920' height='1080'><path fill-rule='evenodd' d='M0 0H1920V1080H0Z M540 132H1880V1026a14 14 0 0 1-14 14H554a14 14 0 0 1-14-14Z'/></svg>")}
   .bg{position:fixed;inset:0;
     background:radial-gradient(1100px 700px at 10% 0%,#34427f 0%,transparent 60%),
@@ -26,7 +26,7 @@
   .list{list-style:none;padding:0;margin-top:30px;display:flex;flex-direction:column;gap:6px;position:relative}
   .item{position:relative;display:flex;gap:16px;padding:14px 14px;border-radius:14px;border:1px solid transparent}
   .item:not(:last-child)::after{content:"";position:absolute;left:28px;top:46px;bottom:-12px;width:2px;background:rgba(255,255,255,.10)}
-  .item.hecho:not(:last-child)::after{background:rgba(34,197,94,.45)}
+  .item.done:not(:last-child)::after{background:rgba(34,197,94,.45)}
   .ico{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid #4a5170;z-index:1;background:#14172a}
   .ico svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
   .n{font:600 13px/1 system-ui;color:#7c84a3}
@@ -34,19 +34,19 @@
   .tt{font-size:19px;font-weight:500;color:#8a91ab}
   .dt{font-size:15px;line-height:1.4;color:#a9b0c8;margin-top:6px;display:none}
   .dur{font:500 13px/1 "SF Mono",ui-monospace,monospace;color:#6ee7a0;padding-top:9px;display:none}
-  .item.activo{background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.38)}
-  .item.activo .ico{border-color:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.18)}
-  .item.activo .ico::before{content:"";width:10px;height:10px;border-radius:50%;background:#60a5fa}
-  .item.activo .n{display:none}
-  .item.activo .tt{color:#fff;font-weight:650}
-  .item.activo .dt{display:block}
-  .item.hecho .ico{background:#22c55e;border-color:#22c55e}
-  .item.hecho .tt{color:#d7dbe8}
-  .item.hecho .dur{display:block}
-  .item.fallo{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.45)}
-  .item.fallo .ico{background:#ef4444;border-color:#ef4444}
-  .item.fallo .tt{color:#fff;font-weight:650}
-  .item.fallo .dt{display:block;color:#fca5a5}
+  .item.active{background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.38)}
+  .item.active .ico{border-color:#60a5fa;box-shadow:0 0 0 5px rgba(96,165,250,.18)}
+  .item.active .ico::before{content:"";width:10px;height:10px;border-radius:50%;background:#60a5fa}
+  .item.active .n{display:none}
+  .item.active .tt{color:#fff;font-weight:650}
+  .item.active .dt{display:block}
+  .item.done .ico{background:#22c55e;border-color:#22c55e}
+  .item.done .tt{color:#d7dbe8}
+  .item.done .dur{display:block}
+  .item.failed{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.45)}
+  .item.failed .ico{background:#ef4444;border-color:#ef4444}
+  .item.failed .tt{color:#fff;font-weight:650}
+  .item.failed .dt{display:block;color:#fca5a5}
   .foot{margin-top:auto;display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:14px;font-size:16px;font-weight:600;
     background:rgba(96,165,250,.10);color:#bfdbfe}
   .foot i{width:10px;height:10px;border-radius:50%;background:#60a5fa;box-shadow:0 0 10px #60a5fa}
@@ -54,7 +54,7 @@
   .foot.ko{background:rgba(239,68,68,.14);color:#fecaca}.foot.ko i{background:#ef4444;box-shadow:0 0 10px #ef4444}
   .foot small{margin-left:auto;font:500 13px/1 system-ui;color:#8d95bb}
 
-  /* Ventana del navegador */
+  /* Browser window */
   .win{position:fixed;left:540px;top:40px;width:1340px;height:1000px;border-radius:14px;
     box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.14)}
   .chrome{position:absolute;inset:0 0 auto 0;height:92px;background:#e9ebf0;border-radius:14px 14px 0 0;border-bottom:1px solid #d3d6dd}
@@ -76,12 +76,12 @@
 </style>
 <div class="bg"></div>
 <aside class="side">
-  <div class="eyebrow" id="eyebrow">Objetivos</div>
-  <h1 id="titulo"></h1>
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="title"></h1>
   <p class="desc" id="desc"></p>
-  <div class="prog"><div class="row"><span><b id="hechos"></b> de <span id="total"></span> objetivos</span><span id="pct"></span></div><div class="bar"><i id="fill"></i></div></div>
+  <div class="prog"><div class="row"><span id="count"></span><span id="pct"></span></div><div class="bar"><i id="fill"></i></div></div>
   <ol class="list" id="list"></ol>
-  <div class="foot" id="foot"><i></i><span id="estado"></span><small id="dom"></small></div>
+  <div class="foot" id="foot"><i></i><span id="status"></span><small id="dom"></small></div>
 </aside>
 <div class="win"><div class="chrome">
   <div class="tabs">
@@ -100,25 +100,32 @@
   </div>
 </div></div>
 <script>
+  const TEXT = {
+    en: {eyebrow: 'Goals', count: (d, n) => `<b>${d}</b> of ${n} goals`, failed: 'A goal failed',
+         done: 'All goals completed', running: 'In progress', preparing: 'Preparing'},
+    es: {eyebrow: 'Objetivos', count: (d, n) => `<b>${d}</b> de ${n} objetivos`, failed: 'Un objetivo falló',
+         done: 'Todos los objetivos cumplidos', running: 'En curso', preparing: 'Preparando'},
+  };
   const s = JSON.parse(new URLSearchParams(location.search).get('s'));
+  const T = TEXT[s.lang] || TEXT.en;
   const $ = id => document.getElementById(id), u = new URL(s.url);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>', CROSS = '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+  document.documentElement.lang = s.lang || 'en';
   $('host').textContent = u.host; $('path').textContent = u.pathname + u.search + u.hash;
-  $('tabt').textContent = s.pestana || u.host; $('fav').textContent = $('tabt').textContent.trim()[0].toUpperCase(); $('dom').textContent = u.host;
-  $('titulo').textContent = s.titulo; $('desc').textContent = s.descripcion;
-  if (s.eyebrow) $('eyebrow').textContent = s.eyebrow;
-  const hechos = s.objetivos.filter(o => o.estado === 'hecho').length, total = s.objetivos.length;
-  $('hechos').textContent = hechos; $('total').textContent = total;
-  $('pct').textContent = Math.round(100 * hechos / total) + ' %'; $('fill').style.width = 100 * hechos / total + '%';
-  s.objetivos.forEach((o, i) => {
-    const li = document.createElement('li'); li.className = 'item ' + o.estado;
-    li.innerHTML = `<div class="ico">${o.estado === 'hecho' ? CHECK : o.estado === 'fallo' ? CROSS : o.estado === 'activo' ? '' : `<span class="n">${i + 1}</span>`}</div>
+  $('tabt').textContent = s.tab || u.host; $('fav').textContent = $('tabt').textContent.trim()[0].toUpperCase(); $('dom').textContent = u.host;
+  $('eyebrow').textContent = T.eyebrow; $('title').textContent = s.title; $('desc').textContent = s.description;
+  const done = s.goals.filter(g => g.state === 'done').length, total = s.goals.length;
+  $('count').innerHTML = T.count(done, total);
+  $('pct').textContent = Math.round(100 * done / total) + ' %'; $('fill').style.width = 100 * done / total + '%';
+  s.goals.forEach((g, i) => {
+    const li = document.createElement('li'); li.className = 'item ' + g.state;
+    li.innerHTML = `<div class="ico">${g.state === 'done' ? CHECK : g.state === 'failed' ? CROSS : g.state === 'active' ? '' : `<span class="n">${i + 1}</span>`}</div>
       <div class="txt"><div class="tt"></div><div class="dt"></div></div><div class="dur"></div>`;
-    li.querySelector('.tt').textContent = o.titulo; li.querySelector('.dt').textContent = o.detalle;
-    li.querySelector('.dur').textContent = o.dur || ''; $('list').append(li);
+    li.querySelector('.tt').textContent = g.title; li.querySelector('.dt').textContent = g.detail;
+    li.querySelector('.dur').textContent = g.dur || ''; $('list').append(li);
   });
-  const foot = $('foot'), fallo = s.objetivos.some(o => o.estado === 'fallo');
-  if (fallo) { foot.classList.add('ko'); $('estado').textContent = 'Un objetivo falló'; }
-  else if (hechos === total) { foot.classList.add('ok'); $('estado').textContent = 'Todos los objetivos cumplidos'; }
-  else $('estado').textContent = hechos || s.objetivos.some(o => o.estado === 'activo') ? 'En curso' : 'Preparando';
+  const foot = $('foot');
+  if (s.goals.some(g => g.state === 'failed')) { foot.classList.add('ko'); $('status').textContent = T.failed; }
+  else if (done === total) { foot.classList.add('ok'); $('status').textContent = T.done; }
+  else $('status').textContent = done || s.goals.some(g => g.state === 'active') ? T.running : T.preparing;
 </script>

@@ -1,103 +1,105 @@
-# Framework: videos de recorridos con objetivos en Ardia
+# Framework: goal-driven walkthrough videos with Ardia
 
-Graba un recorrido que un agente hace con `ardia browse` y lo exporta como MP4 de 1920 × 1080 a 30 fps. A la izquierda hay un panel con los objetivos del encargo, su avance y el tiempo de cada uno. A la derecha se ve la página real dentro de una ventana de navegador, con su URL. Dentro de la página, un recuadro rojo con flecha y etiqueta marca el elemento antes de cada acción.
+> Spanish version: [framework.es.md](framework.es.md).
 
-En los comandos, `$SKILL` es la carpeta donde está instalada esta skill.
+Records a walkthrough an agent performs with `ardia browse` and exports it as a 1920 × 1080, 30 fps MP4. On the left, a sidebar shows the task's goals, their progress and how long each one took. On the right, the real page appears inside a browser window with its URL. Inside the page, a virtual pointer moves to each element, and a red box with an arrow and a label marks it before every action.
 
-## Requisitos
+In the commands below, `$SKILL` is the folder where this skill is installed.
 
-- macOS con Ardia abierto y **Settings → Advanced → Command line and automation → Let programs control Ardia** activado.
-- Permiso de grabación de pantalla para la terminal desde la que se ejecuta el escenario.
-- Python 3 (solo biblioteca estándar), FFmpeg con `libx264` y Google Chrome, que convierte el marco HTML a imagen.
+## Requirements
+
+- macOS with Ardia open and **Settings → Advanced → Command line and automation → Let programs control Ardia** turned on.
+- Python 3 (standard library only), FFmpeg with `libx264`, and Google Chrome, which turns the HTML frame into images.
+
+Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Ardia does not allow in-browser video recording yet (`ardia browse record` fails with `policy_refused`), so the recorder takes page screenshots instead.
 
 ```sh
-command -v ardia ffmpeg ffprobe python3 screencapture
+command -v ardia ffmpeg ffprobe python3
 ardia --version
+defaults read /Applications/Ardia.app/Contents/Info.plist CFBundleShortVersionString
 ffmpeg -hide_banner -encoders | grep libx264
 ls "/Applications/Google Chrome.app"
 ```
 
-## Archivos
+## Files
 
-| Archivo | Qué hace |
+| File | What it does |
 |---|---|
-| `scripts/ardia_video.py` | Clase `Grabacion`: abre la página, graba la pantalla, ejecuta los pasos y guarda la línea de tiempo en `work/toma.json`. |
-| `scripts/guia-visual-ardia.js` | Capa que se inyecta en la página: puntero, recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. |
-| `scripts/marco.html` | Fondo, panel de objetivos y ventana del navegador. El área de la página queda transparente. |
-| `scripts/renderizar.py` | Une `work/toma.mov` y `work/toma.json` en el MP4 final. |
+| `scripts/recorder.py` | `Recording` class: opens the page, captures it with `ardia browse screenshot` while the steps run, and saves the take to `work/take.mov` and the timeline to `work/take.json`. |
+| `scripts/overlay.js` | Layer injected into the page: virtual pointer, box, arrow, label and click pulse. It never intercepts clicks and removes itself at the end. |
+| `scripts/frame.html` | Background, goals sidebar and browser window. The page area stays transparent. |
+| `scripts/render.py` | Combines `work/take.mov` and `work/take.json` into the final MP4. |
 
-La toma (`work/toma.mov`, `work/toma.json`) y el video quedan en la carpeta desde donde se ejecuta, no en la skill.
+The take (`work/take.mov`, `work/take.json`) and the video are written to the folder you run from, not to the skill.
 
-## Escribir un escenario
+## Writing a scenario
 
 ```python
-from ardia_video import Grabacion
+from recorder import Recording
 
-OBJETIVOS = [
-    ('Título del objetivo', 'Qué se hace, en una línea'),
+GOALS = [
+    ('Goal title', 'What happens, in one line'),
     ...
 ]
 
-with Grabacion('Título', 'Descripción', OBJETIVOS, 'https://…', pestana='Título de la pestaña') as g:
-    with g.objetivo(0):
-        g.guiar('#selector', 'Etiqueta en pantalla')
-        g.accion('click', '#selector')
-        g.comprobar(condición, 'Mensaje si no se cumple')
+with Recording('Title', 'Description', GOALS, 'https://…', tab='Tab title') as r:
+    with r.goal(0):
+        r.point('#selector', 'On-screen label')
+        r.act('click', '#selector')
+        r.check(condition, 'Message if it fails')
 ```
 
-| Llamada | Efecto en el video |
+| Call | Effect on the video |
 |---|---|
-| `Grabacion(titulo, descripcion, objetivos, url, pestana=None, rect=…, salida='work/toma')` | Título y descripción encabezan el panel. `objetivos` es la lista de `(título, detalle)`. `pestana` es el texto de la pestaña; sin él se usa el dominio. |
-| `with g.objetivo(i):` | El objetivo `i` pasa a *en curso* y muestra su detalle. Al salir del bloque queda *cumplido*, con su duración, y se oculta el recuadro. Si algo falla dentro, queda *fallido* y el escenario termina con error. |
-| `g.guiar(selector, texto)` | Mueve el puntero al elemento y lo marca con recuadro, flecha y etiqueta. Va antes de la acción. |
-| `g.accion(*args)` | Ejecuta `ardia browse <args>` con una pausa antes y después para que se vea la respuesta. Devuelve la salida. Si la URL cambia, la barra de direcciones se actualiza. |
-| `g.ref(rol, selector=None)` | Devuelve la referencia de accesibilidad (`@e123`) del primer elemento cuyo rol y nombre coinciden con `rol` (expresión regular sobre `snapshot -i --full`). Con `selector`, busca solo dentro de él. |
-| `g.cli(*args)` | Ejecuta `ardia browse <args>` sin pausas. Para lecturas y comprobaciones. |
-| `g.comprobar(condicion, detalle)` | Si la condición es falsa, el objetivo en curso queda *fallido*. |
+| `Recording(title, description, goals, url, tab=None, lang='en', output='work/take')` | Title and description head the sidebar. `goals` is the list of `(title, detail)`. `tab` is the tab text; without it, the domain is used. `lang` (`'en'` or `'es'`) sets the language of the sidebar's own texts. |
+| `with r.goal(i):` | Goal `i` becomes *in progress* and shows its detail. When the block ends it becomes *done*, with its duration, and the box is hidden. If anything fails inside, it becomes *failed* and the scenario exits with an error. |
+| `r.point(selector, label)` | Moves the virtual pointer to the element and marks it with a box, arrow and label. Goes before the action. |
+| `r.act(*args)` | Runs `ardia browse <args>` with a pause before and after so the response is visible. Returns its output. If the URL changes, the address bar updates. |
+| `r.ref(role, selector=None)` | Returns the accessibility reference (`@e123`) of the first element whose role and name match `role` (a regular expression over `snapshot -i --full`). With `selector`, it searches only inside it. |
+| `r.cli(*args)` | Runs `ardia browse <args>` without pauses. For readings and checks. |
+| `r.check(condition, detail)` | If the condition is false, the goal in progress becomes *failed*. |
 
-Para un elemento que solo aparece con el puntero encima, ejecuta `g.accion('hover', …)` antes de `g.guiar`. Si el sitio recarga la página completa al navegar, vuelve a inyectar la capa con `g.cli('eval', GUIA.read_text())`, importando `GUIA` desde `ardia_video`.
+For an element that only appears on hover, run `r.act('hover', …)` before `r.point`. If the site reloads the whole page when navigating, inject the layer again with `r.cli('eval', OVERLAY.read_text())`, importing `OVERLAY` from `recorder`.
 
-## Grabar y exportar
+## Recording and exporting
 
-1. Abre en Ardia el perfil donde se ejecuta el encargo y deja la ventana visible, sin nada encima. La captura toma un rectángulo fijo de la pantalla: lo que pase por encima de esa zona sale en el video.
-2. Prueba el flujo sin grabar:
-
-   ```sh
-   GRABAR=0 PYTHONPATH="$SKILL/scripts" python3 work/escenario.py
-   ```
-
-3. Graba desde la terminal con permiso de grabación de pantalla. Deja `work/toma.mov` y `work/toma.json`:
+1. Open the Ardia profile the task runs in. The capture comes from the page itself, so the window can be anywhere and other windows can cover it.
+2. Dry run:
 
    ```sh
-   PYTHONPATH="$SKILL/scripts" python3 work/escenario.py
+   RECORD=0 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
-4. Exporta con un nombre nuevo por versión. El segundo argumento, opcional, es la ruta de la toma sin extensión:
+3. Record. It writes `work/take.mov` and `work/take.json`:
 
    ```sh
-   python3 "$SKILL/scripts/renderizar.py" outputs/<nombre>.mp4 work/toma
+   PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
-## Ajustes según el equipo
+4. Export with a new name per version. The second, optional argument is the take path without extension:
 
-| Valor | Dónde | Cómo medirlo |
-|---|---|---|
-| `rect` | `Grabacion(…, rect='x,y,ancho,alto')` | Área de la página en puntos de pantalla. Toma una captura completa con `screencapture -x pantalla.png` y mide dónde empieza y termina la página, sin barra lateral ni barra de direcciones. El valor por defecto, `397,39,1514,1032`, corresponde a Ardia maximizado con la barra lateral abierta en una pantalla de 1920 × 1080 puntos. |
-| `CROP` | `scripts/renderizar.py` | Recorte de 1340 × 908 píxeles sobre `toma.mov`, en formato `ancho:alto:x:y`. Ajusta `x` para centrar la aplicación y deja `y` en 0. Si la página no llena 908 píxeles de alto, el resto se ve vacío. |
-| `DESFASE` | `scripts/renderizar.py` | Segundos que se adelantan los cambios del panel. Si el panel cambia antes o después que la página, mide el desfase en el video y ajústalo. |
+   ```sh
+   python3 "$SKILL/scripts/render.py" outputs/<name>.mp4 work/take
+   ```
 
-Comprueba el tamaño de la toma antes de exportar:
+## Capture and framing
+
+The page is captured as fast as Ardia returns screenshots (about 8 fps on a recent Mac) and encoded at a constant 30 fps at the page's CSS size. Each screenshot keeps the time it was taken, so the sidebar stays in sync with the page.
+
+The frame shows a 1340 × 908 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
+
+Check the take size before exporting:
 
 ```sh
-ffprobe -v error -show_entries stream=width,height -of csv=p=0 work/toma.mov
+ffprobe -v error -show_entries stream=width,height -of csv=p=0 work/take.mov
 ```
 
-## Revisar el resultado
+## Reviewing the result
 
 ```sh
-ffprobe -v error -show_entries stream=width,height,r_frame_rate:format=duration -of compact outputs/<nombre>.mp4
-ffmpeg -loglevel error -i outputs/<nombre>.mp4 -vf 'fps=0.5,scale=640:-2,tile=4x5' -frames:v 1 work/revision.png
-ffmpeg -loglevel error -sseof -0.5 -i outputs/<nombre>.mp4 -frames:v 1 work/final.png
+ffprobe -v error -show_entries stream=width,height,r_frame_rate:format=duration -of compact outputs/<name>.mp4
+ffmpeg -loglevel error -i outputs/<name>.mp4 -vf 'fps=0.5,scale=640:-2,tile=4x5' -frames:v 1 work/review.png
+ffmpeg -loglevel error -sseof -0.5 -i outputs/<name>.mp4 -frames:v 1 work/last.png
 ```
 
-En la hoja de contactos, cada objetivo debe pasar por *en curso* y *cumplido* en orden, con el recuadro sobre el elemento correcto antes de cada acción. El último fotograma muestra **Todos los objetivos cumplidos** y la página sin recuadro.
+In the contact sheet, every goal must go through *in progress* and *done* in order, with the box on the right element before each action. The last frame shows **All goals completed** and the page without the box.
