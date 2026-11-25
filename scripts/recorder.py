@@ -84,12 +84,13 @@ class Recording:
         """Inject the overlay into the current page if it is not there (new tab, reload, navigation)."""
         if json.loads(self.cli('eval', 'typeof window.ardiaOverlay')) == 'undefined':
             self.cli('eval', OVERLAY.read_text())
-            if self.capture == 'screenshots':
-                self.cli('eval', 'ardiaOverlay.pointer(false)')
+            self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py draws the pointer
 
-    def _tabs_event(self):
+    def _tabs_event(self, switch=None):
+        """switch: (start, end) of a tab change, so render.py can cross-fade the page over it."""
         labels = list(self.tabs)
-        self._event(type='tabs', tabs=[self.tabs[l]['title'] for l in labels], active=labels.index(self.active))
+        extra = {'switch': [round(switch[0], 3), round(switch[1], 3)]} if switch else {}
+        self._event(type='tabs', tabs=[self.tabs[l]['title'] for l in labels], active=labels.index(self.active), **extra)
 
     def _capture(self):
         """Take page screenshots as fast as Ardia returns them, each stamped with its time."""
@@ -185,11 +186,11 @@ class Recording:
         self._tabs_event()
         self._watch_url()
         self.cli('eval', OVERLAY.read_text())
+        self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py draws the pointer, so it can reach the tabs
         if self.record and not self.capture and self._start_window():
             self.capture = 'window'
         if self.record and not self.capture:
             self.capture = 'screenshots'
-            self.cli('eval', 'ardiaOverlay.pointer(false)')  # render.py animates it instead
             self.frames_dir = Path(self.output + '-frames')
             shutil.rmtree(self.frames_dir, ignore_errors=True)
             self.frames_dir.mkdir(parents=True)
@@ -241,19 +242,23 @@ class Recording:
 
         The sidebar of the video lists every tab opened so far and highlights the active one.
         title is the tab text in that sidebar; by default, the page title."""
-        time.sleep(.4)
+        if url and label in self.tabs:
+            raise ValueError(f'Tab {label!r} is already open')
+        if not url and label not in self.tabs:
+            raise ValueError(f'Unknown tab {label!r}: open it with r.tab({label!r}, url)')
+        # The pointer goes to "New Tab" or to the tab in the sidebar and clicks it before the switch.
+        self._event(type='tab_click', target='new' if url else list(self.tabs).index(label))
+        time.sleep(1.1)
+        start = self.t()
         if url:
-            if label in self.tabs:
-                raise ValueError(f'Tab {label!r} is already open')
             self.cli('tab', 'new', '--label', label, url)
             self.tabs[label] = {'id': self._current_tab_id(), 'title': None}
-        elif label not in self.tabs:
-            raise ValueError(f'Unknown tab {label!r}: open it with r.tab({label!r}, url)')
-        self.cli('tab', self.tabs[label]['id'], '--show')
+        with self._busy:
+            self.cli('tab', self.tabs[label]['id'], '--show')
         self.active = label
         self._ensure_overlay()
         self.tabs[label]['title'] = title or self.tabs[label]['title'] or self.cli('get', 'title').strip()
-        self._tabs_event()
+        self._tabs_event(switch=(start, self.t()))
         self._watch_url()
         time.sleep(.9)
 

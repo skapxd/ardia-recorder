@@ -72,7 +72,7 @@ The sidebar texts can be in English or Spanish (`lang='es'`).
 | Path | Contents |
 |---|---|
 | `SKILL.md` | Instructions for the agent (Spanish: `SKILL.es.md`) |
-| `scripts/` | Recording (`recorder.py`), virtual pointer and highlights (`overlay.js`), frame (`frame.html`) and export (`render.py`) |
+| `scripts/` | Recording (`recorder.py`), highlights (`overlay.js`), frame (`frame.html`) and export (`render.py`) |
 | `references/` | Scenario API, adjustments and review (`framework.md`, `framework.es.md`) |
 | `examples/` | Example tasks and scenarios: one tab and two tabs |
 

@@ -27,7 +27,7 @@ ls "/Applications/Google Chrome.app"
 |---|---|
 | `scripts/recorder.py` | Clase `Recording`: abre la página, la captura mientras corren los pasos (ver [Captura y encuadre](#captura-y-encuadre)) y guarda la toma en `work/take.mov` y la línea de tiempo en `work/take.json`. |
 | `scripts/window_capture.swift` | Graba la ventana de Ardia con ScreenCaptureKit y encuentra la página en ella. Se compila una vez con `swiftc` en `~/Library/Caches/ardia-recorder/`. |
-| `scripts/overlay.js` | Capa que se inyecta en la página: puntero virtual, recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. |
+| `scripts/overlay.js` | Capa que se inyecta en la página: recuadro, flecha, etiqueta y pulso del clic. No intercepta clics y se retira al terminar. El puntero lo dibuja `render.py`, así también puede llegar a las pestañas de la ventana. |
 | `scripts/frame.html` | Fondo, panel de objetivos y una ventana con el estilo de Ardia. El área de la página queda transparente; mantenla igual que `PAGE_*` en `render.py`. |
 | `scripts/render.py` | Une `work/take.mov` y `work/take.json` en el MP4 final. |
 
@@ -56,7 +56,7 @@ with Recording('Título', 'Descripción', OBJETIVOS, 'https://…', tab='Título
 | `with r.goal(i):` | El objetivo `i` pasa a *en curso* y muestra su detalle. Al salir del bloque queda *cumplido*, con su duración, y se oculta el recuadro. Si algo falla dentro, queda *fallido* y el escenario termina con error. |
 | `r.point(selector, label)` | Mueve el puntero virtual al elemento y lo marca con recuadro, flecha y etiqueta. Va antes de la acción. |
 | `r.act(*args)` | Ejecuta `ardia browse <args>` con una pausa antes y después para que se vea la respuesta. Devuelve la salida. Si la URL cambia, la barra de direcciones se actualiza. |
-| `r.tab(label, url=None, title=None)` | Con `url`, abre una pestaña nueva y la muestra; sin ella, vuelve a una pestaña ya abierta. La barra lateral de la ventana lista las pestañas abiertas, resalta la activa y actualiza la dirección. `title` es el texto de la pestaña (por defecto, el título de la página); la primera pestaña es `'main'`. Al terminar cierra las pestañas que abrió. |
+| `r.tab(label, url=None, title=None)` | Con `url`, abre una pestaña nueva y la muestra; sin ella, vuelve a una pestaña ya abierta. En el video, el puntero hace clic en «New Tab» o en la pestaña de la barra lateral, la página anterior sale deslizándose, un aviso breve nombra la pestaña que queda al frente y esa pestaña se ilumina un momento; cada cambio suma alrededor de un segundo. La barra lateral lista las pestañas abiertas y resalta la activa. `title` es el texto de la pestaña (por defecto, el título de la página); la primera pestaña es `'main'`. Al terminar cierra las pestañas que abrió. |
 | `r.ref(role, selector=None)` | Devuelve la referencia de accesibilidad (`@e123`) del primer elemento cuyo rol y nombre coinciden con `role` (expresión regular sobre `snapshot -i --full`). Con `selector`, busca solo dentro de él. |
 | `r.cli(*args)` | Ejecuta `ardia browse <args>` sin pausas. Para lecturas y comprobaciones. |
 | `r.check(condition, detail)` | Si la condición es falsa, el objetivo en curso queda *fallido*. |
@@ -92,7 +92,7 @@ El grabador prueba tres métodos en orden y guarda el que usó en `work/take.jso
 |---|---|---|---|
 | `video` | `ardia browse record` | Video real | Una versión de Ardia que lo permita (hoy responde `policy_refused`) |
 | `window` | `window_capture.swift` graba la ventana de Ardia con ScreenCaptureKit | 30 fps, resolución nativa; no importa qué ventanas tenga encima | Permiso de grabación de pantalla para la terminal, y `swiftc` |
-| `screenshots` | `ardia browse screenshot` en bucle | Página a unos 8 fps; `render.py` dibuja y anima el puntero a 30 fps | Nada |
+| `screenshots` | `ardia browse screenshot` en bucle | Página a unos 8 fps (el puntero siempre lo dibuja `render.py` a 30 fps) | Nada |
 
 Para `window`, la capa pinta un instante unas marcas magenta en las esquinas de la página; el helper las busca en una captura de cada ventana de Ardia y así obtiene la ventana y el área exacta de la página, en cualquier pantalla, escala o disposición. Cuando un método no está disponible, el grabador imprime el motivo y usa el siguiente. Toda toma se codifica a 30 fps constantes, al tamaño CSS de la página y alineada con la línea de tiempo de los objetivos.
 

@@ -72,7 +72,7 @@ Con `lang='es'`, los textos propios del panel salen en español.
 | Ruta | Contenido |
 |---|---|
 | `SKILL.md` | Instrucciones para el agente (en español: `SKILL.es.md`) |
-| `scripts/` | Grabación (`recorder.py`), puntero virtual y marcas (`overlay.js`), marco (`frame.html`) y exportación (`render.py`) |
+| `scripts/` | Grabación (`recorder.py`), marcas en la página (`overlay.js`), marco (`frame.html`) y exportación (`render.py`) |
 | `references/` | API del escenario, ajustes y revisión (`framework.md`, `framework.es.md`) |
 | `examples/` | Encargos y escenarios de ejemplo: una pestaña y dos pestañas |
 

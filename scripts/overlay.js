@@ -1,8 +1,7 @@
 // Presentation layer injected with `ardia browse eval`: virtual pointer, highlight box,
 // arrow, label and click pulse. It never intercepts clicks and removes itself with remove().
 // marks(true) draws magenta squares in the page corners so window_capture can find the page;
-// pointer(false) hides the pointer when the video is assembled from screenshots and the
-// renderer animates it instead.
+// pointer(false) hides the in-page pointer: render.py draws it over the whole video instead.
 (() => {
   window.ardiaOverlay?.remove();
   const host = document.createElement('div');
