@@ -1,34 +1,36 @@
 ---
 name: ardia-recorder
-description: Graba en video un recorrido que un agente hace con `ardia browse` (pruebas e2e o tareas personales en el navegador) y lo exporta como MP4 1920×1080, con un panel lateral de objetivos que muestra qué se pidió, qué sub-meta está en curso, cuáles se cumplieron y cuánto tardó cada una. La página se ve dentro de una ventana de navegador moderna con su URL real, y un recuadro rojo con flecha marca cada elemento antes de actuar. Úsala cuando haya que grabar evidencia de una prueba con Ardia, mostrar paso a paso cómo se cumple un encargo en una web, o cuando pidan "graba el recorrido", "video con objetivos", "evidencia e2e con Ardia".
+description: Records a walkthrough an agent performs with `ardia browse` (e2e tests or personal tasks in the browser) and exports it as a 1920×1080 MP4 with a goals sidebar showing what was asked, which sub-goal is in progress, which ones are done and how long each took. The page appears inside a modern browser window with its real URL, and a red box with an arrow marks each element before acting on it. Use it to record evidence of an Ardia test, to show step by step how a task is completed on a website, or when asked to "record the walkthrough", "video with goals" or "e2e evidence with Ardia".
 ---
 
 # ardia-recorder
 
-Genera un MP4 de 1920 × 1080 a 30 fps a partir de un **escenario**: un archivo Python que lista los objetivos del encargo y los pasos de `ardia browse` que los cumplen. El panel izquierdo del video cuenta el avance en lenguaje humano. No muestra comandos.
+Produces a 1920 × 1080, 30 fps MP4 from a **scenario**: a Python file listing the goals of the task and the `ardia browse` steps that complete them. The left sidebar tells the progress in plain language. It never shows commands.
 
-Los scripts están en `scripts/`, dentro del directorio base de esta skill (en adelante `$SKILL`). La referencia completa de la API, los ajustes de encuadre y la revisión del resultado está en [references/framework.md](references/framework.md). Hay un ejemplo completo en [examples/todomvc/](examples/todomvc/).
+The scripts live in `scripts/`, inside this skill's base directory (`$SKILL` below). The full API, framing adjustments and how to review the result are in [references/framework.md](references/framework.md). A complete example is in [examples/todomvc/](examples/todomvc/). Spanish versions: [SKILL.es.md](SKILL.es.md), [references/framework.es.md](references/framework.es.md).
 
-## Flujo
+Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Check yours with `ardia --version` and `defaults read /Applications/Ardia.app/Contents/Info.plist CFBundleShortVersionString`.
 
-1. **Objetivos.** Convierte lo que pidió el usuario en 3 a 7 objetivos verificables, redactados para quien ve el video: «Crear una tarea», «Borrar la tarea». Cada uno lleva un detalle de una línea con lo que se hace. Ningún objetivo menciona comandos ni selectores.
-2. **Escenario.** Escríbelo en el proyecto del usuario, por ejemplo `work/escenario.py`, siguiendo [examples/todomvc/escenario.py](examples/todomvc/escenario.py). En cada objetivo: `g.guiar(...)` antes de la acción, `g.accion(...)` para actuar y `g.comprobar(...)` con una lectura real de la página. Obtén las referencias `@eN` con `g.ref(...)` en cada ejecución: cambian entre sesiones.
-3. **Prueba sin grabar.** Ejecuta desde el proyecto:
+## Workflow
 
-   ```sh
-   GRABAR=0 PYTHONPATH="$SKILL/scripts" python3 work/escenario.py
-   ```
-
-   Corrige hasta que termine sin error.
-4. **Grabar.** Ejecuta lo mismo sin `GRABAR=0`. La captura necesita permiso de grabación de pantalla. Si tu shell no lo tiene (`screencapture -x /tmp/p.png` falla con *could not create image*), ejecuta el comando en la terminal del usuario. La ventana de Ardia debe estar visible y sin nada encima durante la toma.
-5. **Exportar.**
+1. **Goals.** Turn the user's request into 3 to 7 verifiable goals, written for whoever watches the video: "Create a task", "Delete the task". Each one has a one-line detail of what happens. No goal mentions commands or selectors. Write them in the user's language and pass `lang='es'` to `Recording` if it is Spanish.
+2. **Scenario.** Write it in the user's project, for example `work/scenario.py`, following [examples/todomvc/scenario.py](examples/todomvc/scenario.py). In each goal: `r.point(...)` before the action, `r.act(...)` to act and `r.check(...)` with a real reading of the page. Get `@eN` references with `r.ref(...)` on every run: they change between sessions.
+3. **Dry run.** From the project:
 
    ```sh
-   python3 "$SKILL/scripts/renderizar.py" outputs/<nombre>.mp4
+   RECORD=0 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
-6. **Revisar.** Saca una hoja de contactos y el último fotograma, como indica [references/framework.md](references/framework.md#revisar-el-resultado). Un código de salida correcto no basta. Comprueba que el panel avanza en orden, que el recuadro cae sobre el elemento correcto y que el video cierra con **Todos los objetivos cumplidos**.
+   Fix it until it exits without errors.
+4. **Record.** Run the same command without `RECORD=0`. The page is captured from Ardia itself with `ardia browse screenshot` (about 8 fps), so it needs no screen recording permission and nothing on screen can cover it.
+5. **Export.**
 
-## Al entregar
+   ```sh
+   python3 "$SKILL/scripts/render.py" outputs/<name>.mp4
+   ```
 
-Indica duración, resolución, qué objetivos se cumplieron y cualquier diferencia visible. Si un objetivo falló, el panel lo muestra en rojo: di cuál fue y qué devolvió la comprobación.
+6. **Review.** Make a contact sheet and grab the last frame, as described in [references/framework.md](references/framework.md#reviewing-the-result). A zero exit code is not enough. Check that the sidebar advances in order, that the box lands on the right element and that the video ends with **All goals completed**.
+
+## Delivery
+
+State the duration, resolution, which goals were completed and any visible difference. If a goal failed, the sidebar shows it in red: say which one and what the check returned.

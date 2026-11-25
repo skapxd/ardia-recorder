@@ -1,24 +1,28 @@
 # ardia-recorder
 
-Skill para agentes que graba en video un recorrido hecho con [Ardia](https://ardia.dev) (`ardia browse`) y lo exporta como MP4 de 1920 × 1080. Un panel lateral muestra los objetivos del encargo, cuál está en curso, cuáles se cumplieron y cuánto tardó cada uno. La página se ve dentro de una ventana de navegador con su URL real, y cada elemento se marca antes de actuar sobre él.
+[Español](README.es.md)
 
-Sirve para dejar evidencia de pruebas e2e y para mostrar paso a paso cómo se cumple una tarea en una web.
+Agent skill that records a walkthrough performed with [Ardia](https://ardia.dev) (`ardia browse`) and exports it as a 1920 × 1080 MP4. A sidebar shows the task's goals, which one is in progress, which ones are done and how long each took. The page appears inside a browser window with its real URL, and a virtual pointer marks each element before acting on it.
 
-![Fotograma de ejemplo: panel de objetivos a la izquierda y TodoMVC a la derecha](assets/preview.png)
+Use it to keep evidence of e2e tests, or to show step by step how a task is completed on a website.
 
-## Instalación
+[![Demo: goals sidebar on the left, TodoMVC on the right](assets/demo.gif)](assets/demo.mp4)
 
-Con [APM](https://microsoft.github.io/apm/):
+Full video: [assets/demo.mp4](assets/demo.mp4) (36 s, 1920 × 1080).
+
+## Install
+
+With [APM](https://microsoft.github.io/apm/):
 
 ```sh
 apm install --global skapxd/ardia-recorder
 ```
 
-Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.0.0`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
+To pin a version, add the tag: `skapxd/ardia-recorder#v1.0.1`. To choose the target agent, add `--target claude`, `--target codex` or any other target APM supports.
 
-### Verificar la procedencia
+### Verifying provenance
 
-Cada release incluye `ardia-recorder-<versión>.tar.gz`, generado por GitHub Actions a partir del tag, con una atestación de procedencia firmada (SLSA, Sigstore). Para comprobarla e instalar desde ese paquete:
+Every release includes `ardia-recorder-<version>.tar.gz`, built by GitHub Actions from the tag, with a signed build provenance attestation (SLSA, Sigstore). To check it and install from that package:
 
 ```sh
 gh release download v1.0.1 -R skapxd/ardia-recorder -p 'ardia-recorder-*.tar.gz'
@@ -27,48 +31,51 @@ tar -xzf ardia-recorder-v1.0.1.tar.gz
 apm install --global "$PWD/ardia-recorder"
 ```
 
-## Requisitos
+## Requirements
 
-- macOS con Ardia abierto y **Settings → Advanced → Command line and automation → Let programs control Ardia** activado.
-- Permiso de grabación de pantalla para la terminal que ejecuta la grabación.
-- Python 3, FFmpeg con `libx264` y Google Chrome.
+- macOS with Ardia open and **Settings → Advanced → Command line and automation → Let programs control Ardia** turned on.
+- Python 3, FFmpeg with `libx264`, and Google Chrome.
 
-## Uso
+Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. The page is captured from Ardia itself, so no screen recording permission is needed.
 
-Pídele al agente algo como *«graba en video cómo se crea y se borra una tarea en esta web, con los objetivos a la izquierda»*. La skill le indica cómo convertir el pedido en objetivos, escribir el escenario, probarlo sin grabar, grabarlo, exportarlo y revisar el resultado.
+## Usage
 
-Un escenario es un archivo Python corto:
+Ask your agent something like *"record a video of creating and deleting a task on this site, with the goals on the left"*. The skill tells it how to turn the request into goals, write the scenario, dry-run it, record it, export it and review the result.
+
+A scenario is a short Python file:
 
 ```python
-from ardia_video import Grabacion
+from recorder import Recording
 
-OBJETIVOS = [
-    ('Crear una tarea', 'Escribir el texto y confirmarlo con Enter'),
-    ('Borrar la tarea', 'Quitarla de la lista con la ✕'),
+GOALS = [
+    ('Create a task', 'Type the text and confirm with Enter'),
+    ('Delete the task', 'Remove it from the list with the ✕'),
 ]
 
-with Grabacion('Ciclo de una tarea', 'Prueba e2e de TodoMVC', OBJETIVOS,
-               'https://demo.playwright.dev/todomvc/#/active') as g:
-    with g.objetivo(0):
-        g.guiar('.new-todo', 'Escribir una tarea nueva')
-        g.accion('type', g.ref('textbox'), 'Comprar pan')
-        g.accion('press', 'Enter')
-        g.comprobar('Comprar pan' in g.cli('get', 'text', '.todo-list'), 'La tarea no se creó')
+with Recording('Task lifecycle', 'E2E test on TodoMVC', GOALS,
+               'https://demo.playwright.dev/todomvc/#/active') as r:
+    with r.goal(0):
+        r.point('.new-todo', 'Type a new task')
+        r.act('type', r.ref('textbox'), 'Buy bread')
+        r.act('press', 'Enter')
+        r.check('Buy bread' in r.cli('get', 'text', '.todo-list'), 'The task was not created')
     ...
 ```
 
-- La API y los ajustes de encuadre están en [references/framework.md](references/framework.md).
-- Hay un encargo completo de ejemplo en [examples/todomvc/](examples/todomvc/).
+The sidebar texts can be in English or Spanish (`lang='es'`).
 
-## Estructura
+- The API and framing adjustments are in [references/framework.md](references/framework.md).
+- A complete example task is in [examples/todomvc/](examples/todomvc/).
 
-| Ruta | Contenido |
+## Layout
+
+| Path | Contents |
 |---|---|
-| `SKILL.md` | Instrucciones para el agente |
-| `scripts/` | Grabación (`ardia_video.py`), capa visual (`guia-visual-ardia.js`), marco (`marco.html`) y exportación (`renderizar.py`) |
-| `references/framework.md` | API del escenario, ajustes y revisión |
-| `examples/todomvc/` | Encargo y escenario de ejemplo |
+| `SKILL.md` | Instructions for the agent (Spanish: `SKILL.es.md`) |
+| `scripts/` | Recording (`recorder.py`), virtual pointer and highlights (`overlay.js`), frame (`frame.html`) and export (`render.py`) |
+| `references/` | Scenario API, adjustments and review (`framework.md`, `framework.es.md`) |
+| `examples/todomvc/` | Example task and scenario |
 
-## Licencia
+## License
 
 MIT

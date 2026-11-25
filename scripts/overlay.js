@@ -1,6 +1,7 @@
-// Capa temporal de presentación para «ardia browse eval».
+// Presentation layer injected with `ardia browse eval`: virtual pointer, highlight box,
+// arrow, label and click pulse. It never intercepts clicks and removes itself with remove().
 (() => {
-  window.guiaArdia?.retirar();
+  window.ardiaOverlay?.remove();
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
   document.documentElement.append(host);
@@ -14,12 +15,12 @@
     svg.lines{position:fixed;inset:0;width:100%;height:100%}
   </style><div class="box"></div><svg class="lines"><defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#db263d"/></marker></defs><line stroke="#db263d" stroke-width="3" marker-end="url(#arrow)"/></svg><div class="tag"></div><svg class="pointer" viewBox="0 0 22 30"><path d="M2 2v22l5.5-5.2 3.6 8.4 3.7-1.6-3.6-8.2H19z" fill="#111" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg><div class="pulse"></div>`;
   const get = s => root.querySelector(s);
-  function apuntar(selector, mensaje) {
+  function point(selector, label) {
     const target = document.querySelector(selector);
     const r = target.getBoundingClientRect(), box = get('.box'), tag = get('.tag');
     Object.assign(box.style,{left:r.x-4+'px',top:r.y-4+'px',width:r.width+8+'px',height:r.height+8+'px'});
     for(const el of root.querySelectorAll('.box,.tag,svg.lines'))el.style.visibility='';
-    tag.textContent = mensaje;
+    tag.textContent = label;
     const x = Math.max(8,Math.min(innerWidth-tag.offsetWidth-8,r.x+30)), y = r.bottom+70;
     Object.assign(tag.style,{left:x+'px',top:y+'px'});
     const line=get('line');
@@ -27,13 +28,13 @@
     get('.pointer').style.transform='translate('+ (r.x+Math.min(30,r.width/2))+'px,'+(r.y+r.height/2)+'px)';
     tag.animate([{opacity:0,transform:'translateY(7px)'},{opacity:1,transform:'translateY(0)'}],{duration:300});
   }
-  function pulso(e) {
+  function pulse(e) {
     const ring=get('.pulse');
     Object.assign(ring.style,{left:e.clientX+'px',top:e.clientY+'px'});
     ring.animate([{opacity:1,transform:'scale(.4)'},{opacity:0,transform:'scale(3.5)'}],{duration:650});
   }
-  document.addEventListener('click',pulso,true);
-  function ocultar(){for(const el of root.querySelectorAll('.box,.tag,svg.lines'))el.style.visibility='hidden'}
-  window.guiaArdia={apuntar,ocultar,retirar(){document.removeEventListener('click',pulso,true);host.remove();delete window.guiaArdia}};
-  return 'Guía visual instalada';
+  document.addEventListener('click',pulse,true);
+  function hide(){for(const el of root.querySelectorAll('.box,.tag,svg.lines'))el.style.visibility='hidden'}
+  window.ardiaOverlay={point,hide,remove(){document.removeEventListener('click',pulse,true);host.remove();delete window.ardiaOverlay}};
+  return 'Overlay installed';
 })()
