@@ -2,7 +2,7 @@
 
 [Español](README.es.md)
 
-Agent skill that records a walkthrough performed with [Ardia](https://ardia.dev) (`ardia browse`) and exports it as an MP4 sized to the captured viewport, so the page is shown 1:1. A sidebar shows the task's goals, which one is in progress, which ones are done and how long each took. The page appears inside an Ardia-style window (vertical tabs, the real host in the address field), and a virtual pointer marks each element before acting on it.
+Agent skill that records a walkthrough performed with [Ardia](https://ardia.dev) (`ardia browse`) and exports it as an MP4 sized to the captured viewport, so the page is shown 1:1. A sidebar shows the task's goals, which one is in progress, which ones are done and how long each took. The page appears inside an Ardia-style window (vertical tabs, and an address bar over the page with the current host and path), and a virtual pointer marks each element before acting on it.
 
 Use it to keep evidence of e2e tests, or to show step by step how a task is completed on a website.
 

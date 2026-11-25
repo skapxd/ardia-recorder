@@ -2,8 +2,8 @@
 <meta charset="utf-8">
 <!-- Top layer of the video: background, goals sidebar and an Ardia-style browser window.
      The page area stays transparent; FFmpeg places the capture underneath.
-     Keep the page area in sync with PAGE_* in render.py: x 740, y 49, radius 10. Its size, and the
-     video's, come in the state (page, video); the defaults are 1131 x 982 inside 1920 x 1080.
+     Keep the page area in sync with PAGE_* in render.py: x 740, y 89, radius 10. Its size, and the
+     video's, come in the state (page, video); the defaults are 1131 x 982 inside 1920 x 1120.
      State in ?s=<json>: {title, description, tab, lang, url, page, video, goals:[{title, detail, state, dur}]} -->
 <style>
   *{box-sizing:border-box;margin:0}
@@ -86,7 +86,13 @@
   .dots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:5px}
   .dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}
   .dots i:first-child{background:rgba(255,255,255,.7)}
-  .panel{position:absolute;left:200px;top:9px;width:1131px;height:982px;border-radius:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.4)}
+  /* Address bar over the page: the current host and path, readable at a glance */
+  .url{position:absolute;left:200px;top:9px;height:34px;display:flex;align-items:center;gap:9px;padding:0 14px;border-radius:10px;
+    background:rgba(255,255,255,.07);color:rgba(255,255,255,.7);font-size:15px;white-space:nowrap;overflow:hidden}
+  .url svg{flex:none;width:14px;height:14px;stroke:rgba(255,255,255,.6);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .url b{color:#fff;font-weight:600}
+  .url span{overflow:hidden;text-overflow:ellipsis}
+  .panel{position:absolute;left:200px;top:49px;width:1131px;height:982px;border-radius:10px;box-shadow:0 0 0 .5px rgba(0,0,0,.4)}
 </style>
 <div class="bg"></div>
 <aside class="side">
@@ -113,6 +119,7 @@
     <div class="tabs" id="tabs"></div>
     <div class="dots"><i></i><i></i><i></i></div>
   </div>
+  <div class="url"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span><b id="uhost"></b><span id="upath"></span></span></div>
   <div class="panel"></div>
 </div>
 <script>
@@ -124,12 +131,13 @@
   };
   const s = JSON.parse(new URLSearchParams(location.search).get('s'));
   // The window grows with the captured page; the sidebar keeps its width and follows the height.
-  const [PW, PH] = s.page || [1131, 982], [VW, VH] = s.video || [1920, 1080];
+  const [PW, PH] = s.page || [1131, 982], [VW, VH] = s.video || [1920, 1120];
   for (const el of [document.documentElement, document.body]) { el.style.width = VW + 'px'; el.style.height = VH + 'px'; }
   document.querySelector('.side').style.height = VH - 80 + 'px';
-  Object.assign(document.querySelector('.win').style, {width: 200 + PW + 9 + 'px', height: PH + 18 + 'px'});
+  Object.assign(document.querySelector('.win').style, {width: 200 + PW + 9 + 'px', height: PH + 58 + 'px'});
+  document.querySelector('.url').style.width = PW + 'px';
   Object.assign(document.querySelector('.panel').style, {width: PW + 'px', height: PH + 'px'});
-  const X0 = 740, Y0 = 49, X1 = X0 + PW, Y1 = Y0 + PH;
+  const X0 = 740, Y0 = 89, X1 = X0 + PW, Y1 = Y0 + PH;
   const hole = `M${X0 + 10} ${Y0}H${X1 - 10}a10 10 0 0 1 10 10V${Y1 - 10}a10 10 0 0 1-10 10H${X0 + 10}a10 10 0 0 1-10-10V${Y0 + 10}a10 10 0 0 1 10-10Z`;
   document.body.style.webkitMask = `url("data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns='http://www.w3.org/2000/svg' width='${VW}' height='${VH}'><path fill-rule='evenodd' d='M0 0H${VW}V${VH}H0Z ${hole}'/></svg>`)}")`;
@@ -139,6 +147,8 @@
   document.documentElement.lang = s.lang || 'en';
   // Ardia shows the host in the sidebar's address field, as on ardia.dev
   $('host').textContent = u.host; $('dom').textContent = u.host;
+  // The address bar over the page shows where the agent is: host and full path
+  $('uhost').textContent = u.host; $('upath').textContent = u.pathname + u.search + u.hash === '/' ? '' : u.pathname + u.search + u.hash;
   document.querySelector('.newtab').lastChild.textContent = T.newTab;
   // Vertical tabs: every tab opened so far, the active one highlighted
   const tabs = s.tabs || [s.tab || u.host], active = s.active || 0;
