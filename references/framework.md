@@ -2,7 +2,7 @@
 
 > Spanish version: [framework.es.md](framework.es.md).
 
-Records a walkthrough an agent performs with `ardia browse` and exports it as a 1920 × 1080, 30 fps MP4. On the left, a sidebar shows the task's goals, their progress and how long each one took. On the right, the real page appears inside an Ardia-style window, with the real host in the address field. Inside the page, a virtual pointer moves to each element, and a red box with an arrow and a label marks it before every action.
+Records a walkthrough an agent performs with `ardia browse` and exports it as a 30 fps MP4 sized to the captured viewport. On the left, a sidebar shows the task's goals, their progress and how long each one took. On the right, the real page appears inside an Ardia-style window, with the real host in the address field. Inside the page, a virtual pointer moves to each element, and a red box with an arrow and a label marks it before every action.
 
 In the commands below, `$SKILL` is the folder where this skill is installed.
 
@@ -96,7 +96,7 @@ The recorder tries three methods in order and records the one it used in `work/t
 
 For `window`, the overlay briefly paints magenta marks in the page corners; the helper finds them in a capture of each Ardia window, which gives the window and the exact page area for any display, scale or window layout. When a method is not available, the recorder prints why and uses the next one. Every take is encoded at a constant 30 fps at the page's CSS size, aligned with the goals timeline.
 
-The frame shows a 1131 × 982 area of the page: centered horizontally and aligned to the top. A larger page is cropped; a smaller one is padded with white. If the app sits outside that area, resize the Ardia window before recording.
+The video grows with the captured viewport so the page is shown 1:1, never cropped or scaled: the page area is the viewport (at least 1131 × 982) and the video is that plus the goals sidebar and margins (1920 × 1080 for a 1131 × 982 viewport). A smaller page is centered and padded with white.
 
 Check the take size before exporting:
 
