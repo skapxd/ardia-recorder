@@ -15,10 +15,12 @@ Video completo: [assets/demo.mp4](assets/demo.mp4) (38 s, 1920 × 1080).
 Con [APM](https://microsoft.github.io/apm/):
 
 ```sh
-apm install --global skapxd/ardia-recorder
+apm install --global 'skapxd/ardia-recorder#^1.0.0' --target claude,codex
 ```
 
-APM la descarga directamente de este repositorio de GitHub: `skapxd/ardia-recorder` es la forma corta de `https://github.com/skapxd/ardia-recorder`, y las dos funcionan. Para fijar una versión, añade el tag: `skapxd/ardia-recorder#v1.2.0`. Para elegir el agente de destino, añade `--target claude`, `--target codex` u otro de los que admite APM.
+- **Origen:** APM la descarga directamente de este repositorio de GitHub. `skapxd/ardia-recorder` es la forma corta de `https://github.com/skapxd/ardia-recorder`, y las dos funcionan.
+- **Versión:** `#^1.0.0` instala el release 1.x más reciente, y `apm update` pasa a los siguientes. Usa un tag como `#v1.2.0` para quedarte en una versión. Sin versión, APM instala el último commit de `main`.
+- **Agentes:** `--target` indica qué agentes reciben la skill (`claude`, `codex` u otro de los que admite APM). Sin él, APM usa los `targets` de `~/.apm/apm.yml`.
 
 Sin APM, clona el repositorio en la carpeta de skills de tu agente. Para Claude Code:
 
