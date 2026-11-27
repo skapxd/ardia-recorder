@@ -123,8 +123,17 @@ class Recording:
         self.window, self.window_name = w['id'], w.get('profileName') or self.profile
 
     def _focus(self):
-        """New tabs open in the focused window: bring the pinned one to the front first."""
-        self._call('windows.focus', window=self.window)
+        """New tabs open in the focused window: bring the pinned one to the front first.
+
+        windows.focus answers ok without changing anything while Ardia is not the active app,
+        so Ardia is activated first and the result is checked."""
+        for _ in range(10):
+            sp.run(['open', '-a', 'Ardia'], capture_output=True)
+            self._call('windows.focus', window=self.window)
+            if any(w['id'] == self.window and w['focused'] for w in self._call('windows')):
+                return
+            time.sleep(.3)
+        raise RuntimeError(f'Could not bring the {self.window_name} window to the front')
 
     def _guard(self):
         """Stop if the recorded tab is no longer in the pinned window, before acting on someone else's page."""
