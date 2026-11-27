@@ -52,6 +52,15 @@ def helper():
     return binary
 
 
+_PAGE_MARKS = re.compile(r'^<<<(?:END_)?UNTRUSTED_PAGE_CONTENT[^\n]*\n?', re.M)
+
+
+def unwrap(out):
+    """Since ardia 0.7, what comes from the page is wrapped in UNTRUSTED_PAGE_CONTENT markers.
+    The scenario reads that output as data (JSON from eval, the URL, the text), so the markers go."""
+    return _PAGE_MARKS.sub('', out)
+
+
 class Recording:
     def __init__(self, title, description, goals, url, tab=None, lang='en', output='work/take', label='main',
                  profile=None):
@@ -72,7 +81,7 @@ class Recording:
         r = sp.run(['ardia', 'browse', *args], text=True, capture_output=True)
         if r.returncode:
             raise RuntimeError(r.stderr + r.stdout)
-        return r.stdout
+        return unwrap(r.stdout)
 
     def t(self):
         return time.monotonic() - self.start
@@ -276,7 +285,12 @@ class Recording:
     def __exit__(self, *exc):
         time.sleep(3)  # hold the final state
         # libx264 with yuv420p needs even sizes: a viewport like 1514 x 991 drops its odd pixel.
-        self.page = tuple(v - v % 2 for v in self._page_size())
+        try:
+            self.page = tuple(v - v % 2 for v in self._page_size())
+        except Exception:
+            if exc[0] is None:
+                raise
+            return False  # the scenario already failed: its error is the one worth showing
         # The timeline is saved first: if encoding fails, the frames and the events survive.
         self._write_timeline()
         if self.capture == 'video':
