@@ -21,7 +21,7 @@ Tested with the Ardia app 0.2.48 and the `ardia` CLI 0.6.0. Check yours with `ar
    RECORD=0 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
-   Fix it until it exits without errors.
+   Fix it until it exits without errors. Pass `profile='<Ardia profile>'` to `Recording` when the task needs that profile's sessions; the take stays in a window of that profile, so nobody should use that window while it records.
 4. **Record.** Run the same command without `RECORD=0`. There are three capture methods, tried in this order: Ardia's own video (`ardia browse record`, once Ardia allows it); the Ardia window through ScreenCaptureKit, smooth and unaffected by other windows, when the terminal has screen recording permission; and `ardia browse screenshot` (about 8 fps), where the pointer is animated at render time. Nothing about the screen or the window position is configured: the page area is found automatically. `work/take.json` says which one was used (`capture`). Grant screen recording permission to the terminal for the smooth window capture; without it the take still works.
 5. **Export.**
 

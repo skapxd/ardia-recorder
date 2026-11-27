@@ -20,11 +20,19 @@ Capture methods, in order (take.json records the one used in `capture`):
                pointer so it still moves smoothly. Needs nothing.
 Writes the take to work/take.mov and the timeline to work/take.json, relative to the current directory.
 With RECORD=0 in the environment, runs the flow without capturing.
+PACE (environment, default 1) scales the fixed pauses around each action: 0.3 is fast and still easy to follow.
+
+Each Recording uses an Ardia session of its own (AGENT_BROWSER_SESSION), so it never inherits a tab
+from an earlier run. The CLI opens tabs in the focused Ardia window, so the recording is pinned to one window: the one in
+the `profile` passed to Recording (opened if there is none) or, without it, the focused one. It is
+brought to the front before every new tab, and the take stops with a clear error if the recorded tab
+leaves that window (someone used it, moved it or switched the window to another profile).
 """
 import hashlib, json, os, re, select, shutil, signal, threading, time, subprocess as sp
 from contextlib import contextmanager
 from pathlib import Path
 
+PACE = float(os.environ.get('PACE', '1'))
 OVERLAY = Path(__file__).resolve().parent / 'overlay.js'
 HELPER_SRC = Path(__file__).resolve().parent / 'window_capture.swift'
 
@@ -45,7 +53,8 @@ def helper():
 
 
 class Recording:
-    def __init__(self, title, description, goals, url, tab=None, lang='en', output='work/take', label='main'):
+    def __init__(self, title, description, goals, url, tab=None, lang='en', output='work/take', label='main',
+                 profile=None):
         self.meta = {'title': title, 'description': description, 'tab': tab, 'lang': lang,
                      'goals': [{'title': g[0], 'detail': g[1]} for g in goals]}
         self.url, self.output = url, output
@@ -53,6 +62,10 @@ class Recording:
         self.events, self.record = [], os.environ.get('RECORD', '1') != '0'
         self._url = None
         self.first, self.tabs, self.active = label, {}, label  # tabs: label -> {'id', 'title'}
+        self.profile, self.window = profile, None
+        # A session of its own: the default one outlives each run and can be left on a tab of the user,
+        # which `open` would then navigate. Child `ardia browse` calls inherit it through the environment.
+        os.environ['AGENT_BROWSER_SESSION'] = f'ardia-recorder-{os.getpid()}-{int(time.time())}'
         self._busy = threading.Lock()  # screenshots never run in the middle of an action (they can drop a hover)
 
     def cli(self, *args):
@@ -79,6 +92,55 @@ class Recording:
         if not m:
             raise RuntimeError('Could not find the session tab')
         return m.group(1)
+
+    def _call(self, method, **params):
+        args = ['ardia', 'call', method, '--json']
+        for k, v in params.items():
+            args += ['-p', f'{k}={v}']
+        r = sp.run(args, text=True, capture_output=True)
+        if r.returncode:
+            raise RuntimeError(r.stderr + r.stdout)
+        return json.loads(r.stdout or 'null')
+
+    def _pin_window(self):
+        """Choose the window the take happens in: one in self.profile (opened if missing) or the focused one."""
+        windows = [w for w in self._call('windows') if w['kind'] == 'normal']
+        if self.profile:
+            mine = [w for w in windows if self.profile in (w['profileName'], w['profile'])]
+            if mine:
+                w = next((w for w in mine if w['focused']), mine[0])
+            else:
+                profiles = self._call('profiles.list')
+                p = next((p for p in profiles if self.profile in (p['name'], p['id'])), None)
+                if not p:
+                    raise RuntimeError(f'No Ardia profile named {self.profile!r}: '
+                                       + ', '.join(p['name'] for p in profiles))
+                w = self._call('windows.create', profile=p['id'])
+        else:
+            w = next((w for w in windows if w['focused']), None)
+            if not w:
+                raise RuntimeError('No focused Ardia window: open one and run again')
+        self.window, self.window_name = w['id'], w.get('profileName') or self.profile
+
+    def _focus(self):
+        """New tabs open in the focused window: bring the pinned one to the front first."""
+        self._call('windows.focus', window=self.window)
+
+    def _guard(self):
+        """Stop if the recorded tab is no longer in the pinned window, before acting on someone else's page."""
+        m = re.search(r'^\s*→\s*\[t\d+\]\s+(tab-\S+)', self.cli('tab', 'list'), re.M)
+        if not m:
+            return
+        for w in self._call('windows'):
+            if any(t['id'] == m.group(1) for t in w['tabs']):
+                if w['id'] == self.window:
+                    return
+                where = f"the {w.get('profileName')} window"
+                break
+        else:
+            where = 'no window (it was closed)'
+        raise RuntimeError(f'The recorded tab is in {where}, not in the {self.window_name} window the take '
+                           f'started in. Leave that window alone while recording and run again.')
 
     def _ensure_overlay(self):
         """Inject the overlay into the current page if it is not there (new tab, reload, navigation)."""
@@ -177,6 +239,8 @@ class Recording:
                 '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', self.output + '.mov'], check=True)
 
     def __enter__(self):
+        self._pin_window()
+        self._focus()
         self.cli('open', self.url, '--show')
         self.tabs[self.first] = {'id': self._current_tab_id(), 'title': self.meta['tab'] or self.cli('get', 'title').strip()}
         self.capture = None
@@ -202,7 +266,10 @@ class Recording:
 
     def __exit__(self, *exc):
         time.sleep(3)  # hold the final state
-        self.page = self._page_size()
+        # libx264 with yuv420p needs even sizes: a viewport like 1514 x 991 drops its odd pixel.
+        self.page = tuple(v - v % 2 for v in self._page_size())
+        # The timeline is saved first: if encoding fails, the frames and the events survive.
+        self._write_timeline()
         if self.capture == 'video':
             self.cli('record', 'stop')
             self._encode_video()
@@ -214,20 +281,23 @@ class Recording:
             self._stop.set()
             self._thread.join(timeout=10)
             self._encode()
-        fps = round(len(self.frames) / self.t(), 1) if self.capture == 'screenshots' else None
-        Path(self.output + '.json').write_text(json.dumps(
-            {**self.meta, 'events': self.events, 'capture': self.capture, 'page': self.page, 'screenshot_fps': fps},
-            ensure_ascii=False, indent=1))
+        self._write_timeline()
         for label, tab in self.tabs.items():  # close the tabs r.tab() opened; keep the first one
             if label != self.first:
                 self.cli('tab', 'close', tab['id'])
         self.cli('tab', self.tabs[self.first]['id'])
         self.cli('eval', 'window.ardiaOverlay?.remove()')
 
+    def _write_timeline(self):
+        fps = round(len(self.frames) / self.t(), 1) if self.capture == 'screenshots' else None
+        Path(self.output + '.json').write_text(json.dumps(
+            {**self.meta, 'events': self.events, 'capture': self.capture, 'page': self.page, 'screenshot_fps': fps},
+            ensure_ascii=False, indent=1))
+
     @contextmanager
     def goal(self, i):
         self._event(type='goal', i=i, state='active')
-        time.sleep(.8)
+        time.sleep(.8 * PACE)
         try:
             yield
         except Exception:
@@ -235,7 +305,7 @@ class Recording:
             raise
         self.cli('eval', 'ardiaOverlay.hide()')
         self._event(type='goal', i=i, state='done')
-        time.sleep(.9)
+        time.sleep(.9 * PACE)
 
     def tab(self, label, url=None, title=None):
         """Open a new tab (with url) or go back to an open one, and show it in Ardia.
@@ -251,6 +321,7 @@ class Recording:
         time.sleep(1.1)
         start = self.t()
         if url:
+            self._focus()
             self.cli('tab', 'new', '--label', label, url)
             self.tabs[label] = {'id': self._current_tab_id(), 'title': None}
         with self._busy:
@@ -263,16 +334,18 @@ class Recording:
         time.sleep(.9)
 
     def point(self, selector, label):
+        self._guard()
         self._ensure_overlay()
         pos = json.loads(self.cli('eval', f'ardiaOverlay.point({json.dumps(selector)},{json.dumps(label, ensure_ascii=False)})'))
         self._event(type='point', x=round(pos['x'], 1), y=round(pos['y'], 1))
-        time.sleep(1.2)
+        time.sleep(1.2 * PACE)
 
     def act(self, *args):
-        time.sleep(.4)
+        self._guard()
+        time.sleep(.4 * PACE)
         with self._busy:
             out = self.cli(*args)
-        time.sleep(.9)
+        time.sleep(.9 * PACE)
         self._ensure_overlay()
         self._watch_url()
         return out
