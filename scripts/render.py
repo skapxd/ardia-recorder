@@ -125,56 +125,61 @@ for e in take['events']:
         x, y = NEW_TAB if e['target'] == 'new' else (TABS_X, TABS_Y + TABS_STEP * e['target'])
         points.append({'t': e['t'], 'x': x, 'y': y})
         clicks.append((e['t'] - OFFSET + MOVE, x, y))
+def still(path, t0, t1):
+    # A still enters the graph only for [t0, t1]: looped for the whole video, every one of them was decoded
+    # and blended on every frame, and a long take with many states took over an hour to export.
+    global ins
+    t0 = max(t0, 0)
+    ins += ['-loop', '1', '-framerate', '30', '-t', f'{max(t1 - t0, 1 / 30):.3f}', '-i', str(path)]
+    return f'[{ins.count("-i") - 1}:v]setpts=PTS+{t0:.3f}/TB,'
+
+
 ins, f = ['-i', str(TAKE.with_suffix('.mov'))], [f'color=0x121524:s={VIDEO_W}x{VIDEO_H}:r=30[bg]']
 f.append(f'[0:v]fps=30:eof_action=pass,setsar=1,tpad=stop_mode=clone:stop_duration=10,trim=duration={END:.2f}[pg0]')
 cur = 'pg0'
 for k, sw in enumerate(switches):
     # The old page stays put while Ardia switches, then slides out to the left, revealing the new tab.
-    still = W / f'switch-{k}.png'
+    still_png = W / f'switch-{k}.png'
     sp.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f"{max(sw['t0'] - .05, 0):.3f}", '-i', str(TAKE.with_suffix('.mov')),
-            '-frames:v', '1', str(still)], check=True)
-    ins += ['-loop', '1', '-framerate', '30', '-i', str(still)]
+            '-frames:v', '1', str(still_png)], check=True)
     s_ = f"clip((t-{sw['t1']:.3f})/{SLIDE},0,1)"
-    f.append(f"[{ins.count('-i') - 1}:v]format=rgba[sn{k}]")
-    f.append(f"[{cur}][sn{k}]overlay=x='-{W_PAGE}*{s_}*{s_}*(3-2*{s_})':y=0:shortest=1:"
+    f.append(still(still_png, sw['t0'], sw['t1'] + SLIDE) + f"format=rgba[sn{k}]")
+    f.append(f"[{cur}][sn{k}]overlay=x='-{W_PAGE}*{s_}*{s_}*(3-2*{s_})':y=0:eof_action=pass:"
              f"enable='between(t,{sw['t0']:.3f},{sw['t1'] + SLIDE:.3f})'[pa{k}]")
     # A short notice on top of the page says which tab is now in front.
     toast = W / f'toast-{k}.png'
     words = TOAST.get(lang, TOAST['en'])
     snap(toast, toast_html((words[0] if sw['new'] else words[1], sw['title'])), size='900,90')
-    ins += ['-loop', '1', '-framerate', '30', '-i', str(toast)]
-    f.append(f"[{ins.count('-i') - 1}:v]format=rgba,fade=in:st={sw['t1']:.3f}:d=0.25:alpha=1,"
+    f.append(still(toast, sw['t1'], sw['t1'] + TOAST_FOR) + f"format=rgba,fade=in:st={sw['t1']:.3f}:d=0.25:alpha=1,"
              f"fade=out:st={sw['t1'] + TOAST_FOR - .35:.3f}:d=0.35:alpha=1[to{k}]")
-    f.append(f"[pa{k}][to{k}]overlay=x=(main_w-overlay_w)/2:y=22:shortest=1:"
+    f.append(f"[pa{k}][to{k}]overlay=x=(main_w-overlay_w)/2:y=22:eof_action=pass:"
              f"enable='between(t,{sw['t1']:.3f},{sw['t1'] + TOAST_FOR:.3f})'[pb{k}]")
     cur = f'pb{k}'
 f.append(f'[{cur}]{FIT}[app]')
 f.append(f'[bg][app]overlay={PAGE_X}:{PAGE_Y}:shortest=1[v0]')
-first = ins.count('-i')  # index of the first frame input
 for i, (t, s, fade) in enumerate(states):
     png = W / f'frame-{i:02d}.png'
     snap(png, f'file://{ASSETS}/frame.html?s=' + quote(json.dumps(s, ensure_ascii=False)))
-    ins += ['-framerate', '30', '-loop', '1', '-i', str(png)]
+    # Each state covers the whole frame, so it is needed only until the next one has faded in.
+    t_end = states[i + 1][0] + states[i + 1][2] if i + 1 < len(states) else END
     fx = f',fade=in:st={t:.3f}:d={fade}:alpha=1' if i else ''
-    f.append(f'[{first + i}:v]format=rgba{fx}[m{i}]')
-    f.append(f"[v{i}][m{i}]overlay=0:0:shortest=1:enable='gte(t,{t:.3f})'[v{i + 1}]")
+    f.append(still(png, t, t_end) + f'format=rgba{fx}[m{i}]')
+    f.append(f"[v{i}][m{i}]overlay=0:0:eof_action=pass:enable='between(t,{t:.3f},{t_end:.3f})'[v{i + 1}]")
 last = f'v{len(states)}'
 for k, (tc, x, y) in enumerate(clicks):
     # The click on a sidebar tab: a ring that fades out where the pointer lands.
     ring = W / 'ring.png'
     if not ring.exists():
         snap(ring, RING, size='200,200')
-    ins += ['-loop', '1', '-framerate', '30', '-i', str(ring)]
-    f.append(f"[{ins.count('-i') - 1}:v]crop=48:48:0:0,format=rgba,fade=out:st={tc:.3f}:d=0.6:alpha=1[ring{k}]")
-    f.append(f"[{last}][ring{k}]overlay={x - 24:.0f}:{y - 24:.0f}:shortest=1:enable='between(t,{tc:.3f},{tc + .6:.3f})'[c{k}]")
+    f.append(still(ring, tc, tc + .6) + f"crop=48:48:0:0,format=rgba,fade=out:st={tc:.3f}:d=0.6:alpha=1[ring{k}]")
+    f.append(f"[{last}][ring{k}]overlay={x - 24:.0f}:{y - 24:.0f}:eof_action=pass:enable='between(t,{tc:.3f},{tc + .6:.3f})'[c{k}]")
     last = f'c{k}'
 if points:
     # One pointer for the whole video, drawn at 30 fps, so it can move from the page to the tabs.
     snap(W / 'pointer.png', POINTER_HTML, size='200,200')
-    ins += ['-loop', '1', '-framerate', '30', '-i', str(W / 'pointer.png')]
-    f.append(f"[{ins.count('-i') - 1}:v]crop=30:38:0:0,format=rgba[ptr]")
+    f.append(still(W / 'pointer.png', 0, END) + f"crop=30:38:0:0,format=rgba[ptr]")
     start = (PAGE_X + PAGE_W / 2, PAGE_Y + PAGE_H / 2)
-    f.append(f"[{last}][ptr]overlay=x='{eased('x', points, start[0])}':y='{eased('y', points, start[1])}':shortest=1[pt]")
+    f.append(f"[{last}][ptr]overlay=x='{eased('x', points, start[0])}':y='{eased('y', points, start[1])}':eof_action=pass[pt]")
     last = 'pt'
 f.append(f'[{last}]format=yuv420p[out]')
 
