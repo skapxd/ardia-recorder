@@ -52,7 +52,7 @@ with Recording('Title', 'Description', GOALS, 'https://…', tab='Tab title') as
 
 | Call | Effect on the video |
 |---|---|
-| `Recording(title, description, goals, url, tab=None, lang='en', output='work/take')` | Title and description head the sidebar. `goals` is the list of `(title, detail)`. `tab` is the tab text; without it, the domain is used. `lang` (`'en'` or `'es'`) sets the language of the sidebar's own texts. |
+| `Recording(title, description, goals, url, tab=None, lang='en', output='work/take', profile=None)` | Title and description head the sidebar. `goals` is the list of `(title, detail)`. `tab` is the tab text; without it, the domain is used. `lang` (`'en'` or `'es'`) sets the language of the sidebar's own texts. `profile` is the Ardia profile (name or id) the take runs in: it uses a window in that profile, or opens one. Without it, the focused window. |
 | `with r.goal(i):` | Goal `i` becomes *in progress* and shows its detail. When the block ends it becomes *done*, with its duration, and the box is hidden. If anything fails inside, it becomes *failed* and the scenario exits with an error. |
 | `r.point(selector, label)` | Moves the virtual pointer to the element and marks it with a box, arrow and label. Goes before the action. |
 | `r.act(*args)` | Runs `ardia browse <args>` with a pause before and after so the response is visible. Returns its output. If the URL changes, the address bar updates. |
@@ -65,7 +65,7 @@ For an element that only appears on hover, run `r.act('hover', …)` before `r.p
 
 ## Recording and exporting
 
-1. Open the Ardia profile the task runs in. The window can be anywhere on any display, and other windows can cover it.
+1. Pass the Ardia profile the task runs in as `profile`, the one with the sessions it needs. The window can be anywhere on any display, and other windows can cover it. Don't use that window while recording: new tabs open in the focused window, so the recorder brings its window to the front before each one, and it stops with an error if the recorded tab leaves that window. Each take runs in an Ardia session of its own, so it never reuses a tab from an earlier run.
 2. Dry run:
 
    ```sh
@@ -76,6 +76,12 @@ For an element that only appears on hover, run `r.act('hover', …)` before `r.p
 
    ```sh
    PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
+   ```
+
+   `PACE` scales the pauses around each action (default `1`). `PACE=0.3` is fast and still easy to follow:
+
+   ```sh
+   PACE=0.3 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
 4. Export with a new name per version. The second, optional argument is the take path without extension:

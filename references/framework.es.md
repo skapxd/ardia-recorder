@@ -52,7 +52,7 @@ with Recording('Título', 'Descripción', OBJETIVOS, 'https://…', tab='Título
 
 | Llamada | Efecto en el video |
 |---|---|
-| `Recording(title, description, goals, url, tab=None, lang='en', output='work/take')` | Título y descripción encabezan el panel. `goals` es la lista de `(título, detalle)`. `tab` es el texto de la pestaña; sin él se usa el dominio. `lang` (`'en'` o `'es'`) es el idioma de los textos propios del panel. |
+| `Recording(title, description, goals, url, tab=None, lang='en', output='work/take', profile=None)` | Título y descripción encabezan el panel. `goals` es la lista de `(título, detalle)`. `tab` es el texto de la pestaña; sin él se usa el dominio. `lang` (`'en'` o `'es'`) es el idioma de los textos propios del panel. `profile` es el perfil de Ardia (nombre o id) donde corre la toma: usa una ventana de ese perfil o abre una. Sin él, la ventana activa. |
 | `with r.goal(i):` | El objetivo `i` pasa a *en curso* y muestra su detalle. Al salir del bloque queda *cumplido*, con su duración, y se oculta el recuadro. Si algo falla dentro, queda *fallido* y el escenario termina con error. |
 | `r.point(selector, label)` | Mueve el puntero virtual al elemento y lo marca con recuadro, flecha y etiqueta. Va antes de la acción. |
 | `r.act(*args)` | Ejecuta `ardia browse <args>` con una pausa antes y después para que se vea la respuesta. Devuelve la salida. Si la URL cambia, la barra de direcciones se actualiza. |
@@ -65,7 +65,7 @@ Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover',
 
 ## Grabar y exportar
 
-1. Abre en Ardia el perfil donde se ejecuta el encargo. La ventana puede estar en cualquier sitio y pantalla, y otras ventanas pueden taparla.
+1. Pasa en `profile` el perfil de Ardia donde se ejecuta el encargo, el que tiene las sesiones que necesita. La ventana puede estar en cualquier sitio y pantalla, y otras ventanas pueden taparla. No uses esa ventana mientras graba: las pestañas nuevas se abren en la ventana activa, así que el recorder trae la suya al frente antes de cada una, y se detiene con un error si la pestaña grabada sale de esa ventana. Cada toma usa una sesión de Ardia propia, así que nunca reutiliza una pestaña de una corrida anterior.
 2. Prueba el flujo sin grabar:
 
    ```sh
@@ -76,6 +76,12 @@ Para un elemento que solo aparece con el puntero encima, ejecuta `r.act('hover',
 
    ```sh
    PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
+   ```
+
+   `PACE` escala las pausas alrededor de cada acción (por defecto `1`). `PACE=0.3` va rápido y todavía se sigue con la vista:
+
+   ```sh
+   PACE=0.3 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
 4. Exporta con un nombre nuevo por versión. El segundo argumento, opcional, es la ruta de la toma sin extensión:

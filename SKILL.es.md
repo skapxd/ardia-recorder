@@ -18,7 +18,7 @@ Probada con la app Ardia 0.2.48 y la CLI `ardia` 0.6.0. Para ver las tuyas: `ard
    RECORD=0 PYTHONPATH="$SKILL/scripts" python3 work/scenario.py
    ```
 
-   Corrige hasta que termine sin error.
+   Corrige hasta que termine sin error. Pasa `profile='<perfil de Ardia>'` a `Recording` cuando el encargo necesita las sesiones de ese perfil; la toma se queda en una ventana de ese perfil, así que nadie debe usar esa ventana mientras graba.
 4. **Grabar.** Ejecuta lo mismo sin `RECORD=0`. Hay tres métodos de captura, en este orden: el video del propio Ardia (`ardia browse record`, cuando Ardia lo permita); la ventana de Ardia con ScreenCaptureKit, fluida y sin que otras ventanas la tapen, si la terminal tiene permiso de grabación de pantalla; y `ardia browse screenshot` (unos 8 fps), donde el puntero se anima al renderizar. No se configura nada de la pantalla ni de la posición de la ventana: el área de la página se detecta sola. `work/take.json` indica cuál se usó (`capture`). Para la captura fluida de la ventana, da permiso de grabación de pantalla a la terminal; sin él, la toma igual funciona.
 5. **Exportar.**
 
